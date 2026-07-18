@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  BALLONFAHRT · STATISTIK · STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Auswertung je Kontakt: eingeladen / angemeldet / abgesagt + Quoten.
+  © Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Statistik · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:1080px;margin:0 auto;padding:15px max(22px,env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .wordmark{display:flex;align-items:center;gap:12px;}
+  .wm-logo{width:42px;height:42px;flex:none;border-radius:7px;overflow:hidden;display:block;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:1.04rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:.8rem;color:#b7b09f;flex-wrap:wrap;justify-content:flex-end;}
+  .topbar-right a{color:#cfc9bb;text-decoration:none;border-bottom:1px solid #44413a;}
+  .topbar-right a:hover{color:#fff;border-color:var(--brand);}
+  .topbar-right button{background:none;border:1px solid #44413a;color:#cfc9bb;border-radius:6px;padding:6px 11px;cursor:pointer;font-size:.78rem;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 60px;}
+  .hero{margin-bottom:22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+  .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.08;letter-spacing:-.015em;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
+  .card + .card{margin-top:18px;}
+  /* Übersichtskarten */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
+  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:16px 18px;box-shadow:var(--shadow);}
+  .stat .k{font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);}
+  .stat .v{font-family:var(--mono);font-size:1.7rem;font-weight:600;margin-top:6px;line-height:1;}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar input[type=search]{flex:1;min-width:180px;font-family:var(--sans);font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 12px;}
+  .toolbar input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.2);}
+  .check{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--ink-soft);font-weight:600;white-space:nowrap;}
+  .check input{width:18px;height:18px;accent-color:var(--brand);cursor:pointer;}
+  button.exp{padding:9px 14px;font-size:.85rem;font-weight:700;color:var(--brand-dark);background:var(--surface);border:1px solid var(--line);border-radius:7px;cursor:pointer;}
+  button.exp:hover{background:var(--surface-2);border-color:var(--brand);}
+  /* Tabelle */
+  .tbl-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:.88rem;}
+  thead th{text-align:right;padding:10px 12px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--brand-dark);background:var(--surface-2);border-bottom:2px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;}
+  thead th:first-child{text-align:left;border-radius:6px 0 0 0;}
+  thead th:last-child{border-radius:0 6px 0 0;}
+  thead th .ar{color:var(--ink-faint);font-size:.7rem;}
+  tbody td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;font-family:var(--mono);}
+  tbody td:first-child{text-align:left;font-weight:600;font-family:var(--sans);}
+  tbody tr:hover{background:var(--surface-2);}
+  .num0{color:var(--ink-faint);}
+  .quota{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+  .qbar{width:60px;height:7px;background:#ece6d8;border-radius:5px;overflow:hidden;flex:none;}
+  .qbar>i{display:block;height:100%;border-radius:5px;}
+  .qbar.neg>i{background:var(--neg);}
+  .qbar.pos>i{background:var(--pos);}
+  .qval{min-width:38px;display:inline-block;}
+  .empty{padding:22px;text-align:center;color:var(--ink-faint);font-size:.88rem;}
+  .msg{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.88rem;}
+  .msg.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
+  .msg.hide{display:none;}
+  #login{max-width:400px;margin:8vh auto 0;}
+  #login .field{margin-bottom:14px;}
+  #login label{display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  #login input{width:100%;font-size:16px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:10px 12px;}
+  #login input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.2);}
+  button.cta{width:100%;padding:13px;font-size:1rem;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:8px;cursor:pointer;}
+  button.cta:hover{background:var(--brand-dark);}
+  .hidden{display:none;}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="wordmark">
+      <img class="wm-logo" alt="Steffen Holzbau" src="data:image/png;base64,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">
+      <div><div class="wm-name">STEFFEN <span>HOLZBAU</span></div><div class="wm-tag">BALLONTEAM</div></div>
+    </div>
+    <div class="topbar-right">
+      <a href="admin.html" id="lnkAdmin" class="hidden">Fahrtplanung</a>
+      <a href="kontakte.html" id="lnkKont" class="hidden">Kontakte</a>
+      <span id="whoami"></span>
+      <button id="logoutBtn" class="hidden">Abmelden</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div class="hero" style="justify-content:center"><h1>Statistik-Login</h1></div>
+  <div class="card">
+    <div class="field"><label>E-Mail</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Passwort</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <div id="loginMsg" class="msg bad hide"></div>
+    <button class="cta" id="loginBtn">Anmelden</button>
+  </div>
+  <footer style="text-align:center"><b>STEFFEN HOLZBAU · BALLONTEAM</b></footer>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="hero"><div><div class="kicker">Ballonteam · Auswertung</div><h1>Statistik</h1></div></div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Kontakte</div><div class="v" id="sKont">–</div></div>
+    <div class="stat"><div class="k">Fahrten</div><div class="v" id="sFahrt">–</div></div>
+    <div class="stat"><div class="k">Einladungen</div><div class="v" id="sEin">–</div></div>
+    <div class="stat"><div class="k">Anmeldungen</div><div class="v" id="sAnm">–</div></div>
+    <div class="stat"><div class="k">Absagen</div><div class="v" id="sAbs">–</div></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Kontakt suchen…">
+      <label class="check"><input type="checkbox" id="onlyInv" checked> nur mit Einladungen</label>
+      <button class="exp" id="expBtn">⭳ CSV-Export</button>
+    </div>
+    <div class="tbl-scroll">
+      <table id="tbl">
+        <thead><tr>
+          <th data-sort="name">Kontakt <span class="ar"></span></th>
+          <th data-sort="e">Eingeladen <span class="ar"></span></th>
+          <th data-sort="a">Angemeldet <span class="ar"></span></th>
+          <th data-sort="d">Abgesagt <span class="ar"></span></th>
+          <th data-sort="aq">Absagequote <span class="ar"></span></th>
+          <th data-sort="zq">Zusagequote <span class="ar"></span></th>
+          <th data-sort="zuletzt">Zuletzt eingeladen <span class="ar"></span></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="7" class="empty">Lädt…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Auswertung</footer>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_R7dJv2fCtG8ud3dDCaeqUQ_9BfG52EI";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id)=>document.getElementById(id);
+
+let rows = [];
+let sortKey = "e", sortDir = -1;   // Standard: nach Einladungen absteigend
+
+// ---- Auth ----
+async function initAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) showApp(session.user); else showLogin();
+}
+function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkKont"].forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkKont"].forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadData(); }
+$("loginBtn").addEventListener("click", async ()=>{
+  $("loginMsg").classList.add("hide");
+  const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
+  if(error){ $("loginMsg").textContent="Login fehlgeschlagen: "+error.message; $("loginMsg").classList.remove("hide"); return; }
+  showApp(data.user);
+});
+$("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); showLogin(); });
+
+// ---- Daten laden ----
+async function loadData(){
+  const [c, ein, abs, anm, fahrten] = await Promise.all([
+    sb.from("contacts").select("id,vorname,name"),
+    sb.from("einladungen_pro_kontakt").select("*"),
+    sb.from("absagen_pro_kontakt").select("*"),
+    sb.from("anmeldungen_pro_kontakt").select("*"),
+    sb.from("fahrten").select("id")
+  ]);
+  const contacts=c.data||[];
+  const mE={},mD={},mA={},mZ={};
+  (ein.data||[]).forEach(r=>{ mE[r.contact_id]=r.einladungen; mZ[r.contact_id]=r.zuletzt; });
+  (abs.data||[]).forEach(r=>{ mD[r.contact_id]=r.absagen; });
+  (anm.data||[]).forEach(r=>{ mA[r.contact_id]=r.anmeldungen; });
+
+  rows = contacts.map(c=>{
+    const e=mE[c.id]||0, a=mA[c.id]||0, d=mD[c.id]||0;
+    return {
+      name:((c.name||"")+", "+(c.vorname||"")).replace(/^, |, $/,""),
+      e, a, d,
+      aq: e>0 ? d/e : null,     // Absagequote
+      zq: e>0 ? a/e : null,     // Zusagequote
+      zuletzt: mZ[c.id]||null
+    };
+  });
+
+  // Übersicht
+  $("sKont").textContent=contacts.length;
+  $("sFahrt").textContent=(fahrten.data||[]).length;
+  $("sEin").textContent=rows.reduce((s,r)=>s+r.e,0);
+  $("sAnm").textContent=rows.reduce((s,r)=>s+r.a,0);
+  $("sAbs").textContent=rows.reduce((s,r)=>s+r.d,0);
+
+  render();
+}
+
+function fmtDate(ts){ if(!ts) return "—"; const dt=new Date(ts); return dt.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+function pct(x){ return x==null?"—":Math.round(x*100)+"%"; }
+
+function visibleRows(){
+  const q=($("search").value||"").toLowerCase().trim();
+  const onlyInv=$("onlyInv").checked;
+  let list=rows.filter(r=>(!onlyInv||r.e>0) && (!q||r.name.toLowerCase().includes(q)));
+  list.sort((x,y)=>{
+    let a=x[sortKey], b=y[sortKey];
+    if(sortKey==="name"){ return sortDir*a.localeCompare(b,"de"); }
+    if(sortKey==="zuletzt"){ a=a?new Date(a).getTime():0; b=b?new Date(b).getTime():0; }
+    a=(a==null?-1:a); b=(b==null?-1:b);
+    return sortDir*(a-b);
+  });
+  return list;
+}
+function render(){
+  updateHeaderArrows();
+  const list=visibleRows();
+  const tb=$("tbody");
+  if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">Keine Daten.</td></tr>'; return; }
+  tb.innerHTML=list.map(r=>{
+    const aqBar = r.aq==null?'' : `<div class="qbar neg"><i style="width:${Math.round(r.aq*100)}%"></i></div>`;
+    const zqBar = r.zq==null?'' : `<div class="qbar pos"><i style="width:${Math.round(r.zq*100)}%"></i></div>`;
+    const z=(v)=>v?String(v):'<span class="num0">0</span>';
+    return `<tr>
+      <td>${r.name||"—"}</td>
+      <td>${z(r.e)}</td>
+      <td>${z(r.a)}</td>
+      <td>${z(r.d)}</td>
+      <td><div class="quota">${aqBar}<span class="qval">${pct(r.aq)}</span></div></td>
+      <td><div class="quota">${zqBar}<span class="qval">${pct(r.zq)}</span></div></td>
+      <td>${fmtDate(r.zuletzt)}</td>
+    </tr>`;
+  }).join("");
+}
+function updateHeaderArrows(){
+  document.querySelectorAll("thead th").forEach(th=>{
+    const k=th.getAttribute("data-sort");
+    th.querySelector(".ar").textContent = k===sortKey ? (sortDir<0?"▼":"▲") : "";
+  });
+}
+document.querySelectorAll("thead th").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const k=th.getAttribute("data-sort");
+    if(k===sortKey) sortDir=-sortDir; else { sortKey=k; sortDir=(k==="name")?1:-1; }
+    render();
+  });
+});
+$("search").addEventListener("input", render);
+$("onlyInv").addEventListener("change", render);
+
+// ---- CSV-Export ----
+$("expBtn").addEventListener("click", ()=>{
+  const head=["Kontakt","Eingeladen","Angemeldet","Abgesagt","Absagequote_%","Zusagequote_%","Zuletzt_eingeladen"];
+  const lines=[head.join(";")];
+  visibleRows().forEach(r=>{
+    lines.push([
+      '"'+(r.name||"").replace(/"/g,'""')+'"',
+      r.e, r.a, r.d,
+      r.aq==null?"":Math.round(r.aq*100),
+      r.zq==null?"":Math.round(r.zq*100),
+      r.zuletzt?new Date(r.zuletzt).toLocaleDateString("de-DE"):""
+    ].join(";"));
+  });
+  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ballon-statistik-"+new Date().toISOString().slice(0,10)+".csv";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+initAuth();
+</script>
+</body>
+</html>
