@@ -251,7 +251,7 @@ async function doLogin(){
       const m=(error.message||"").toLowerCase();
       let txt="Login fehlgeschlagen: "+error.message;
       if(m.includes("invalid login")) txt="E-Mail oder Passwort ist falsch.";
-      else if(m.includes("email not confirmed")) txt="Konto noch nicht bestätigt – in Supabase unter Authentication den User bestätigen („Auto Confirm").";
+      else if(m.includes("email not confirmed")) txt="Konto noch nicht bestaetigt - in Supabase unter Authentication den User bestaetigen (Auto Confirm).";
       loginErr(txt); return;
     }
     showApp(data.user);
