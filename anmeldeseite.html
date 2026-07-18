@@ -113,6 +113,12 @@
   .rcap div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:.9rem;}
   .rcap div:last-child{border-bottom:none;}
   .rcap b{font-family:var(--mono);}
+  .okinfo{margin-top:18px;text-align:left;font-size:.9rem;color:var(--ink-soft);}
+  .okinfo p{margin-bottom:10px;}
+  .okinfo p:last-child{margin-bottom:0;}
+  .okinfo b{color:var(--ink);}
+  .okinfo a{color:var(--brand-dark);font-weight:700;text-decoration:none;border-bottom:1px solid var(--wood);}
+  .okhint{background:#fbf3e2;border:1px solid #ecd9b0;border-radius:8px;padding:11px 13px;}
   .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;
     margin:20px auto;animation:sp 1s linear infinite;}
   @keyframes sp{to{transform:rotate(360deg);}}
@@ -204,16 +210,19 @@
     <div class="card"><div class="result ok">
       <div class="ic">&#10003;</div>
       <h2>Platz gesichert! 🎈</h2>
-      <p>Deine Anmeldung ist bestätigt. Du bekommst rechtzeitig die Details zum Treffpunkt. Bei Wetterabsage melden wir uns.</p>
+      <p>Deine Anmeldung ist bestätigt. Bei Wetterabsage melden wir uns.</p>
       <div class="rcap">
         <div><span>Termin</span><b id="okTermin">–</b></div>
         <div><span>Treffpunkt</span><b id="okOrt">–</b></div>
-        <div><span>Personen</span><b id="okPax">–</b></div>
-        <div><span>Gewicht</span><b id="okKg">–</b></div>
       </div>
       <a class="maplink" id="okMap" href="#" target="_blank" rel="noopener" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        Treffpunkt in Google Maps</a>
+        Treffpunkt in Google Maps öffnen</a>
+      <div class="okinfo">
+        <p class="okhint"><b>Bitte fest einplanen:</b> Wir verlassen uns darauf, dass du zum Termin da bist.</p>
+        <p><b>Kleidung:</b> Am besten Wanderkleidung und festes Schuhwerk.</p>
+        <p id="okPilot"><b>Verhindert?</b> Bitte telefonisch beim Piloten abmelden.</p>
+      </div>
     </div></div>
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
@@ -357,9 +366,11 @@ async function submit(){
     const f=info.fahrt;
     $("okTermin").textContent = fmtDateShort(f.datum) + ", " + (f.uhrzeit? f.uhrzeit.slice(0,5):"");
     $("okOrt").textContent = f.treffpunkt || "–";
-    $("okPax").textContent = pick;
-    $("okKg").textContent  = r.sum + " kg";
     if(f.maps_link){ const m=$("okMap"); m.href=f.maps_link; m.style.display="inline-flex"; }
+    if(f.pilot_name || f.pilot_tel){
+      const tel=(f.pilot_tel||"").replace(/\s+/g,"");
+      $("okPilot").innerHTML = '<b>Verhindert?</b> Bitte telefonisch beim Piloten abmelden: '+(f.pilot_name||"")+(tel?' <a href="tel:'+tel+'">'+f.pilot_tel+'</a>':'');
+    }
     show("screen-ok");
     return;
   }
