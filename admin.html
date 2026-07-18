@@ -245,16 +245,21 @@ async function doLogin(){
   const email=$("email").value.trim(), password=$("pass").value;
   if(!email || !password){ loginErr("Bitte E-Mail und Passwort eingeben."); return; }
   const btn=$("loginBtn"); btn.disabled=true; btn.textContent="Anmelden…";
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  btn.disabled=false; btn.textContent="Anmelden";
-  if(error){
-    const m=(error.message||"").toLowerCase();
-    let txt="Login fehlgeschlagen: "+error.message;
-    if(m.includes("invalid login")) txt="E-Mail oder Passwort ist falsch.";
-    else if(m.includes("email not confirmed")) txt="Konto noch nicht bestätigt – in Supabase unter Authentication den User bestätigen („Auto Confirm").";
-    loginErr(txt); return;
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      const m=(error.message||"").toLowerCase();
+      let txt="Login fehlgeschlagen: "+error.message;
+      if(m.includes("invalid login")) txt="E-Mail oder Passwort ist falsch.";
+      else if(m.includes("email not confirmed")) txt="Konto noch nicht bestätigt – in Supabase unter Authentication den User bestätigen („Auto Confirm").";
+      loginErr(txt); return;
+    }
+    showApp(data.user);
+  }catch(e){
+    loginErr("Fehler beim Login: "+(e && e.message ? e.message : String(e)));
+  }finally{
+    const b=$("loginBtn"); b.disabled=false; b.textContent="Anmelden";
   }
-  showApp(data.user);
 }
 function loginErr(t){ $("loginMsg").textContent=t; $("loginMsg").classList.remove("hide"); }
 $("loginBtn").addEventListener("click", doLogin);
