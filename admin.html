@@ -163,7 +163,7 @@
     <div class="formgrid">
       <div class="field"><label>Datum</label><input type="date" id="fDatum"></div>
       <div class="field"><label>Uhrzeit</label><input type="time" id="fZeit" value="06:00"></div>
-      <div class="field"><label>Treffpunkt <span class="hint">(Ortsname)</span></label><input type="text" id="fOrt" value="Ellange"></div>
+      <div class="field"><label>Treffpunkt <span class="hint">(Ortsname – Vorschläge aus früheren Fahrten)</span></label><input type="text" id="fOrt" value="Hofweiler" list="ortList" autocomplete="off"><datalist id="ortList"></datalist></div>
       <div class="field"><label>Windrichtung</label>
         <select id="fWind"><option>N</option><option>NO</option><option>O</option><option>SO</option><option>S</option><option>SW</option><option>W</option><option selected>NW</option></select></div>
       <div class="field"><label>Max. Personen</label><div class="input-row"><input type="number" id="fMaxPax" value="4" min="1" max="8"><span class="unit">Pers.</span></div></div>
@@ -226,6 +226,7 @@ let contacts = [];        // Vorschlagsliste
 let chosen = {};          // id -> bool
 let pollTimer = null;
 let rcptFlags = [];       // aktive Flag-Filter in der Empfängerauswahl
+let ortMaps = {};         // Treffpunkt-Name -> zuletzt genutzter Maps-Link
 const DIRS = ["N","NO","O","SO","S","SW","W","NW"];
 
 // ---------- Auth ----------
@@ -254,7 +255,18 @@ async function loadFahrten(){
     o.textContent=`${f.datum} ${(f.uhrzeit||"").slice(0,5)} · ${f.treffpunkt||""} · ${f.status}`;
     sel.appendChild(o);
   });
+  ortMaps={}; const orte=new Set();
+  (data||[]).forEach(f=>{ if(f.treffpunkt){ orte.add(f.treffpunkt); if(f.maps_link) ortMaps[f.treffpunkt]=f.maps_link; } });
+  $("ortList").innerHTML=[...orte].sort((a,b)=>a.localeCompare(b,"de")).map(o=>'<option value="'+o.replace(/"/g,'&quot;')+'">').join("");
+  suggestMaps();
 }
+function suggestMaps(){
+  const v=($("fOrt").value||"").trim();
+  const known=ortMaps[v];
+  const cur=($("fMaps").value||"").trim();
+  if(known && (!cur || Object.values(ortMaps).includes(cur))){ $("fMaps").value=known; }
+}
+$("fOrt").addEventListener("input", suggestMaps);
 $("fahrtSel").addEventListener("change", async (e)=>{
   if(!e.target.value){ return; }
   const { data } = await sb.from("fahrten").select("*").eq("id",e.target.value).single();
@@ -306,7 +318,7 @@ function visibleRcpt(){
 function renderRcptFlagbar(){
   const bar=$("rcptFlags"); const flags=allRcptFlags();
   if(!flags.length){ bar.innerHTML=""; return; }
-  bar.innerHTML='<span class="lbl">Flags:</span>';
+  bar.innerHTML='<span class="lbl">Kategorien:</span>';
   flags.forEach(f=>{
     const b=document.createElement("button");
     b.className="fchip"+(rcptFlags.includes(f)?" on":"");
