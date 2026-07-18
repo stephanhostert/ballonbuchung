@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  BALLONFAHRT · ADMIN (LIVE) · STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Mit Supabase verbunden. Login -> Termin anlegen -> Empfänger vorfiltern
+  (Wann/Wind) -> SMS über Edge Function -> Anmeldungen live.
+  © Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Admin · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:900px;margin:0 auto;padding:15px max(22px,env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .wordmark{display:flex;align-items:center;gap:12px;}
+  .wm-logo{width:42px;height:42px;flex:none;border-radius:7px;overflow:hidden;display:block;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:1.04rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:.8rem;color:#b7b09f;}
+  .topbar-right button{background:none;border:1px solid #44413a;color:#cfc9bb;border-radius:6px;padding:6px 11px;cursor:pointer;font-size:.78rem;}
+  .wrap{max-width:900px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 60px;}
+  .hero{margin-bottom:22px;}
+  .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.08;letter-spacing:-.015em;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
+  .card + .card{margin-top:18px;}
+  .card-head{display:flex;align-items:center;gap:10px;padding-bottom:13px;margin-bottom:17px;border-bottom:1px solid var(--line-soft);}
+  .card-head .step{width:24px;height:24px;flex:none;border-radius:50%;background:var(--brand);color:#fff;font-size:.8rem;font-weight:700;display:grid;place-items:center;}
+  .card-title{font-weight:700;font-size:1.04rem;}
+  .card-title small{display:block;font-weight:400;color:var(--ink-faint);font-size:.78rem;}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;}
+  @media(max-width:640px){.formgrid{grid-template-columns:1fr;}}
+  .field label{display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .field .hint{font-weight:400;color:var(--ink-faint);}
+  .input-row{display:flex;align-items:stretch;}
+  input,select,textarea{width:100%;font-family:var(--sans);font-size:16px;font-weight:500;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:10px 12px;}
+  input[type=number]{font-family:var(--mono);}
+  select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:38px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%235c574d' stroke-width='1.6' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 13px center;}
+  .input-row input{border-radius:6px 0 0 6px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);background-color:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.2);}
+  .unit{display:flex;align-items:center;padding:0 13px;white-space:nowrap;font-family:var(--mono);font-size:.8rem;color:var(--ink-faint);background:#efe8d8;border:1px solid var(--line);border-left:none;border-radius:0 6px 6px 0;}
+  .full{grid-column:1 / -1;}
+  button.cta{margin-top:18px;padding:13px 22px;font-size:1rem;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:8px;cursor:pointer;}
+  button.cta:hover{background:var(--brand-dark);}
+  button.cta:disabled{background:#c7cdc4;cursor:not-allowed;}
+  button.ghost{background:var(--surface);color:var(--brand-dark);border:1px solid var(--line);}
+  .rcpt-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .rcpt-sum{font-size:.86rem;color:var(--ink-soft);}
+  .rcpt-sum b{color:var(--brand-dark);font-family:var(--mono);}
+  .mini{font-size:.76rem;color:var(--brand-dark);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;}
+  .clist{border:1px solid var(--line);border-radius:8px;overflow:hidden;max-height:340px;overflow-y:auto;}
+  .crow{display:flex;align-items:center;gap:12px;padding:11px 13px;border-bottom:1px solid var(--line-soft);background:var(--surface);}
+  .crow:last-child{border-bottom:none;}
+  .crow.off{background:var(--surface-2);opacity:.72;}
+  .crow input[type=checkbox]{width:19px;height:19px;flex:none;accent-color:var(--brand);cursor:pointer;}
+  .cmain{flex:1;min-width:0;}
+  .cname{font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .cmeta{font-size:.76rem;color:var(--ink-faint);font-family:var(--mono);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .vip{font-size:.6rem;font-weight:700;color:#9a6b00;background:#fbeecb;border:1px solid #eed9a6;padding:1px 6px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;}
+  .why{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .why.wann{color:#8a5a00;background:#f7ecd5;}
+  .why.wind{color:var(--neg);background:var(--neg-soft);}
+  .why.ok{color:var(--pos);background:var(--pos-soft);}
+  .msg{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.88rem;}
+  .msg.ok{background:var(--pos-soft);border:1px solid #c4dcc1;color:var(--pos);}
+  .msg.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
+  .msg.hide{display:none;}
+  .cap{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+  @media(max-width:560px){.cap{grid-template-columns:1fr;}}
+  .cap-lbl{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:6px;color:var(--ink-soft);}
+  .cap-lbl b{font-family:var(--mono);color:var(--ink);}
+  .bar{height:10px;background:#ece6d8;border-radius:6px;overflow:hidden;}
+  .bar>i{display:block;height:100%;width:0;background:var(--brand);border-radius:6px;transition:width .4s ease;}
+  .bar.full>i{background:var(--neg);}
+  .reglist{margin-top:18px;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .reglist .rr{display:flex;align-items:center;gap:12px;padding:10px 13px;border-bottom:1px solid var(--line-soft);font-size:.88rem;}
+  .reglist .rr:last-child{border-bottom:none;}
+  .reglist .rr .n{width:22px;height:22px;flex:none;border-radius:50%;background:var(--brand-soft);color:var(--brand-dark);font-family:var(--mono);font-size:.76rem;font-weight:600;display:grid;place-items:center;}
+  .reglist .rr .who{flex:1;font-weight:600;}
+  .reglist .rr .det{font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);}
+  .empty{padding:16px;text-align:center;color:var(--ink-faint);font-size:.85rem;}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;}
+  .pill{font-family:var(--mono);font-size:.72rem;padding:3px 10px;border-radius:20px;background:var(--brand-soft);color:var(--brand-dark);font-weight:600;}
+  .pill.closed{background:var(--neg-soft);color:var(--neg);}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;}
+  /* Login */
+  #login{max-width:400px;margin:8vh auto 0;}
+  #login .card{padding:26px;}
+  #login .field{margin-bottom:14px;}
+  #login input{border-radius:6px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="wordmark">
+      <img class="wm-logo" alt="Steffen Holzbau" src="data:image/png;base64,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">
+      <div><div class="wm-name">STEFFEN <span>HOLZBAU</span></div><div class="wm-tag">BALLONTEAM</div></div>
+    </div>
+    <div class="topbar-right"><span id="whoami"></span><button id="logoutBtn" class="hidden">Abmelden</button></div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div class="hero" style="text-align:center"><h1>Admin-Login</h1></div>
+  <div class="card">
+    <div class="field"><label>E-Mail</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Passwort</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <div id="loginMsg" class="msg bad hide"></div>
+    <button class="cta" id="loginBtn" style="width:100%">Anmelden</button>
+  </div>
+  <footer style="text-align:center"><b>STEFFEN HOLZBAU · BALLONTEAM</b></footer>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+
+  <div class="hero"><div class="kicker">Ballonteam · Fahrtplanung</div><h1>Termin &amp; Passagiere</h1></div>
+
+  <!-- 1 Termin -->
+  <div class="card">
+    <div class="card-head"><span class="step">1</span><span class="card-title">Termin anlegen<small>Oder unten eine bestehende offene Fahrt wählen.</small></span></div>
+    <div class="formgrid">
+      <div class="field"><label>Datum</label><input type="date" id="fDatum"></div>
+      <div class="field"><label>Uhrzeit</label><input type="time" id="fZeit" value="06:00"></div>
+      <div class="field"><label>Treffpunkt <span class="hint">(Ortsname)</span></label><input type="text" id="fOrt" value="Ellange"></div>
+      <div class="field"><label>Windrichtung</label>
+        <select id="fWind"><option>N</option><option>NO</option><option>O</option><option>SO</option><option>S</option><option>SW</option><option>W</option><option selected>NW</option></select></div>
+      <div class="field"><label>Max. Personen</label><div class="input-row"><input type="number" id="fMaxPax" value="4" min="1" max="8"><span class="unit">Pers.</span></div></div>
+      <div class="field"><label>Max. Gesamtgewicht</label><div class="input-row"><input type="number" id="fMaxKg" value="340" min="50" step="10"><span class="unit">kg</span></div></div>
+      <div class="field full"><label>Treffpunkt-Link <span class="hint">(Google Maps – in SMS &amp; Anmeldeseite)</span></label><input type="text" id="fMaps" placeholder="https://maps.google.com/?q=..."></div>
+      <div class="field full"><label>Notiz <span class="hint">(intern)</span></label><input type="text" id="fNotiz"></div>
+    </div>
+    <button class="cta" id="createBtn">Termin anlegen</button>
+    <div id="createMsg" class="msg ok hide"></div>
+
+    <div class="field full" style="margin-top:20px"><label>Bestehende Fahrt wählen</label>
+      <select id="fahrtSel"><option value="">– neue Fahrt oben anlegen –</option></select></div>
+  </div>
+
+  <!-- 2 Empfänger -->
+  <div class="card hidden" id="rcptCard">
+    <div class="card-head"><span class="step">2</span><span class="card-title">Empfänger auswählen<small>Vorgefiltert nach „Wann“ (Zeitraum) und „Wind“ (±45°).</small></span></div>
+    <div class="rcpt-top">
+      <div class="rcpt-sum"><b id="selCount">0</b> von <b id="totCount">0</b> gewählt · <span id="selPax">0</span> mögl. Plätze</div>
+      <div><button class="mini" id="selMatch">nur Passende</button> · <button class="mini" id="selAll">alle</button> · <button class="mini" id="selNone">keine</button></div>
+    </div>
+    <div class="clist" id="clist"><div class="empty">Lädt…</div></div>
+    <button class="cta" id="sendBtn">SMS an <span id="sendN">0</span> Empfänger senden</button>
+    <div id="sendMsg" class="msg ok hide"></div>
+  </div>
+
+  <!-- 3 Live -->
+  <div class="card hidden" id="liveCard">
+    <div class="card-head"><span class="step">3</span><span class="card-title">Anmeldungen (live)<small>First come first serve · schließt automatisch bei voll.</small></span></div>
+    <div style="margin-bottom:14px"><span class="pill" id="statusPill">offen</span></div>
+    <div class="cap">
+      <div><div class="cap-lbl"><span>Plätze</span><b><span id="uPax">0</span> / <span id="mPax">–</span></b></div><div class="bar" id="barPax"><i></i></div></div>
+      <div><div class="cap-lbl"><span>Gewicht</span><b><span id="uKg">0</span> / <span id="mKg">–</span> kg</b></div><div class="bar" id="barKg"><i></i></div></div>
+    </div>
+    <div class="reglist" id="reglist"><div class="empty">Noch keine Anmeldungen.</div></div>
+    <div class="actions">
+      <button class="cta ghost" id="refreshBtn">Aktualisieren</button>
+      <button class="cta ghost" id="closeBtn">Anmeldefenster schließen</button>
+    </div>
+  </div>
+
+  <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Admin · Fahrtplanung</footer>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_R7dJv2fCtG8ud3dDCaeqUQ_9BfG52EI";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id)=>document.getElementById(id);
+
+let fahrt = null;         // aktuelle Fahrt
+let contacts = [];        // Vorschlagsliste
+let chosen = {};          // id -> bool
+let pollTimer = null;
+const DIRS = ["N","NO","O","SO","S","SW","W","NW"];
+
+// ---------- Auth ----------
+async function initAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) showApp(session.user); else showLogin();
+}
+function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("logoutBtn").classList.add("hidden"); $("whoami").textContent=""; }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); }
+
+$("loginBtn").addEventListener("click", async ()=>{
+  $("loginMsg").classList.add("hide");
+  const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
+  if(error){ $("loginMsg").textContent="Login fehlgeschlagen: "+error.message; $("loginMsg").classList.remove("hide"); return; }
+  showApp(data.user);
+});
+$("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); showLogin(); });
+
+// ---------- Fahrten ----------
+async function loadFahrten(){
+  const { data } = await sb.from("fahrten").select("*").order("datum",{ascending:true});
+  const sel=$("fahrtSel");
+  sel.innerHTML='<option value="">– neue Fahrt oben anlegen –</option>';
+  (data||[]).forEach(f=>{
+    const o=document.createElement("option"); o.value=f.id;
+    o.textContent=`${f.datum} ${(f.uhrzeit||"").slice(0,5)} · ${f.treffpunkt||""} · ${f.status}`;
+    sel.appendChild(o);
+  });
+}
+$("fahrtSel").addEventListener("change", async (e)=>{
+  if(!e.target.value){ return; }
+  const { data } = await sb.from("fahrten").select("*").eq("id",e.target.value).single();
+  if(data) activateFahrt(data);
+});
+
+$("createBtn").addEventListener("click", async ()=>{
+  const rec={
+    datum:$("fDatum").value, uhrzeit:$("fZeit").value||null, treffpunkt:$("fOrt").value||null,
+    maps_link:$("fMaps").value||null, wind_ist:$("fWind").value,
+    max_personen:parseInt($("fMaxPax").value,10), max_gewicht_kg:parseFloat($("fMaxKg").value), notiz:$("fNotiz").value||null
+  };
+  if(!rec.datum){ flash("createMsg","bad","Bitte ein Datum wählen."); return; }
+  const { data, error } = await sb.from("fahrten").insert(rec).select().single();
+  if(error){ flash("createMsg","bad","Fehler: "+error.message); return; }
+  flash("createMsg","ok","Termin angelegt.");
+  await loadFahrten(); $("fahrtSel").value=data.id;
+  activateFahrt(data);
+});
+
+function activateFahrt(f){
+  fahrt=f;
+  $("rcptCard").classList.remove("hidden");
+  $("liveCard").classList.remove("hidden");
+  chosen={};
+  loadRecipients();
+  loadLive();
+  startPoll();
+}
+
+// ---------- Empfänger ----------
+function windOk(w,i){ if(!w)return true; if(!i)return true; const a=DIRS.indexOf(w),b=DIRS.indexOf(i); if(a<0||b<0)return true; let d=Math.abs(a-b); d=Math.min(d,8-d); return d<=1; }
+async function loadRecipients(){
+  const { data, error } = await sb.rpc("empfaenger_vorschlag",{ p_datum:fahrt.datum, p_wind:fahrt.wind_ist });
+  if(error){ $("clist").innerHTML='<div class="empty">Fehler: '+error.message+'</div>'; return; }
+  contacts=data||[];
+  contacts.forEach(c=>{ if(chosen[c.id]===undefined) chosen[c.id]=c.passt; });
+  renderRecipients();
+}
+function renderRecipients(){
+  const box=$("clist"); box.innerHTML="";
+  if(!contacts.length){ box.innerHTML='<div class="empty">Keine aktiven Kontakte mit Einwilligung.</div>'; }
+  let sel=0,pax=0;
+  contacts.forEach(c=>{
+    const on=chosen[c.id]; if(on){sel++;pax+=c.personen;}
+    const why = c.passt?'<span class="why ok">passt</span>'
+      : (!((c.wann_von==null||fahrt.datum>=c.wann_von)&&(c.wann_bis==null||fahrt.datum<=c.wann_bis))
+          ? '<span class="why wann">außerhalb Zeitraum</span>'
+          : '<span class="why wind">Wind passt nicht</span>');
+    const vip=c.prioritaet===1?'<span class="vip">VIP</span>':'';
+    const zeit=(c.wann_von||c.wann_bis)?((c.wann_von||"…")+"–"+(c.wann_bis||"…")):"jederzeit";
+    const row=document.createElement("div"); row.className="crow"+(on?"":" off");
+    row.innerHTML=`<input type="checkbox" ${on?"checked":""} data-id="${c.id}">
+      <div class="cmain"><div class="cname">${c.name||""}, ${c.vorname||""} ${vip}</div>
+      <div class="cmeta">${c.handy||""} · ${c.personen} Pl. · ${zeit} · Wind ${c.wind_wunsch||"egal"}</div></div>${why}`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll("input[type=checkbox]").forEach(inp=>inp.addEventListener("change",function(){ chosen[this.getAttribute("data-id")]=this.checked; renderRecipients(); }));
+  $("selCount").textContent=sel; $("totCount").textContent=contacts.length; $("selPax").textContent=pax; $("sendN").textContent=sel;
+  $("sendBtn").disabled = sel===0;
+}
+$("selMatch").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=c.passt); renderRecipients(); });
+$("selAll").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=true); renderRecipients(); });
+$("selNone").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=false); renderRecipients(); });
+
+// ---------- SMS senden ----------
+$("sendBtn").addEventListener("click", async ()=>{
+  const ids=contacts.filter(c=>chosen[c.id]).map(c=>c.id);
+  if(!ids.length) return;
+  $("sendBtn").disabled=true; $("sendBtn").textContent="Sende…";
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, contact_ids:ids } });
+  $("sendBtn").disabled=false; $("sendBtn").innerHTML='SMS an <span id="sendN">'+ids.length+'</span> Empfänger senden';
+  if(error){ flash("sendMsg","bad","Versand-Fehler: "+error.message+" (Edge Function deployt & Secrets gesetzt?)"); return; }
+  const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
+  flash("sendMsg","ok",`SMS ausgelöst: ${ok}/${ids.length} erfolgreich versandt.`);
+});
+
+// ---------- Live ----------
+async function loadLive(){
+  if(!fahrt) return;
+  const { data:fresh } = await sb.from("fahrten").select("*").eq("id",fahrt.id).single();
+  if(fresh) fahrt=fresh;
+  const { data:regs } = await sb.from("anmeldungen")
+    .select("personen,gewicht_kg,created_at,contacts(vorname,name)")
+    .eq("fahrt_id",fahrt.id).eq("status","bestaetigt").order("created_at",{ascending:true});
+  const list=regs||[];
+  const uPax=list.reduce((s,r)=>s+r.personen,0);
+  const uKg=list.reduce((s,r)=>s+Number(r.gewicht_kg),0);
+  $("mPax").textContent=fahrt.max_personen; $("mKg").textContent=fahrt.max_gewicht_kg;
+  $("uPax").textContent=uPax; $("uKg").textContent=uKg;
+  $("barPax").querySelector("i").style.width=Math.min(100,uPax/fahrt.max_personen*100)+"%";
+  $("barKg").querySelector("i").style.width=Math.min(100,uKg/fahrt.max_gewicht_kg*100)+"%";
+  $("barPax").classList.toggle("full",uPax>=fahrt.max_personen);
+  $("barKg").classList.toggle("full",uKg>=fahrt.max_gewicht_kg);
+  const pill=$("statusPill"); pill.textContent=fahrt.status; pill.classList.toggle("closed",fahrt.status!=="offen");
+  const box=$("reglist");
+  if(!list.length){ box.innerHTML='<div class="empty">Noch keine Anmeldungen.</div>'; }
+  else { box.innerHTML=""; list.forEach((r,i)=>{
+    const c=r.contacts||{}; const row=document.createElement("div"); row.className="rr";
+    row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span><span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`;
+    box.appendChild(row);
+  }); }
+}
+$("refreshBtn").addEventListener("click", loadLive);
+$("closeBtn").addEventListener("click", async ()=>{
+  if(!fahrt) return;
+  await sb.from("fahrten").update({status:"geschlossen"}).eq("id",fahrt.id);
+  loadLive(); loadFahrten();
+});
+function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(loadLive,15000); }
+
+function flash(id,kind,txt){ const e=$(id); e.className="msg "+kind; e.textContent=txt; e.classList.remove("hide"); }
+
+initAuth();
+</script>
+</body>
+</html>
