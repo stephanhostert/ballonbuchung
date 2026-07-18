@@ -208,6 +208,8 @@
     <div class="actions">
       <button class="cta ghost" id="refreshBtn">Aktualisieren</button>
       <button class="cta ghost" id="closeBtn">Anmeldefenster schließen</button>
+      <button class="cta ghost" id="doneBtn" style="color:var(--pos);border-color:#c4dcc1">Fahrt durchgeführt</button>
+      <button class="cta ghost" id="cancelFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt absagen</button>
     </div>
   </div>
 
@@ -412,6 +414,41 @@ $("closeBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
   const neu = fahrt.status==="offen" ? "geschlossen" : "offen";
   await sb.from("fahrten").update({status:neu}).eq("id",fahrt.id);
+  loadLive(); loadFahrten();
+});
+$("doneBtn").addEventListener("click", async ()=>{
+  if(!fahrt) return;
+  if(!confirm("Fahrt als durchgeführt markieren?\nPassagiere mit Gutschein-Nr. werden auf inaktiv gesetzt (mit Fahrtdatum in der Bemerkung).")) return;
+  const btn=$("doneBtn"); btn.disabled=true; btn.textContent="…";
+  const { data:regs } = await sb.from("anmeldungen")
+    .select("contacts(id, gutschein_nr, bemerkung)")
+    .eq("fahrt_id",fahrt.id).eq("status","bestaetigt");
+  const datum = new Date(fahrt.datum+"T00:00:00").toLocaleDateString("de-DE");
+  const note = "Geflogen am "+datum;
+  let n=0;
+  for(const r of (regs||[])){
+    const c=r.contacts; if(!c || !c.gutschein_nr) continue;
+    const bem = (c.bemerkung||"").includes(note) ? c.bemerkung : (c.bemerkung ? (c.bemerkung+" | "+note) : note);
+    const { error } = await sb.from("contacts").update({ aktiv:false, bemerkung:bem }).eq("id",c.id);
+    if(!error) n++;
+  }
+  await sb.from("fahrten").update({status:"durchgefuehrt"}).eq("id",fahrt.id);
+  btn.disabled=false; btn.textContent="Fahrt durchgeführt";
+  alert("Fahrt als durchgeführt markiert. "+n+" Gutschein-Kontakt(e) auf inaktiv gesetzt.");
+  loadLive(); loadFahrten();
+});
+$("cancelFahrtBtn").addEventListener("click", async ()=>{
+  if(!fahrt) return;
+  const reason = prompt("Grund der Absage (z. B. Wetteränderung) – erscheint in der SMS:","");
+  if(reason===null) return;
+  if(!confirm("Fahrt wirklich absagen? Alle zugesagten Passagiere werden per SMS informiert.")) return;
+  const btn=$("cancelFahrtBtn"); btn.disabled=true; btn.textContent="Sende Absagen…";
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"cancel", reason } });
+  btn.disabled=false; btn.textContent="Fahrt absagen";
+  if(error){ alert("Fehler: "+error.message); return; }
+  const total=(data&&data.results)?data.results.length:0;
+  const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
+  alert("Fahrt abgesagt. "+ok+"/"+total+" Passagier(e) per SMS informiert.");
   loadLive(); loadFahrten();
 });
 function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(loadLive,15000); }
