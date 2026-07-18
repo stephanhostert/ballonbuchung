@@ -240,12 +240,25 @@ async function initAuth(){
 function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("logoutBtn").classList.add("hidden"); $("whoami").textContent=""; }
 function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); }
 
-$("loginBtn").addEventListener("click", async ()=>{
+async function doLogin(){
   $("loginMsg").classList.add("hide");
-  const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
-  if(error){ $("loginMsg").textContent="Login fehlgeschlagen: "+error.message; $("loginMsg").classList.remove("hide"); return; }
+  const email=$("email").value.trim(), password=$("pass").value;
+  if(!email || !password){ loginErr("Bitte E-Mail und Passwort eingeben."); return; }
+  const btn=$("loginBtn"); btn.disabled=true; btn.textContent="Anmelden…";
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled=false; btn.textContent="Anmelden";
+  if(error){
+    const m=(error.message||"").toLowerCase();
+    let txt="Login fehlgeschlagen: "+error.message;
+    if(m.includes("invalid login")) txt="E-Mail oder Passwort ist falsch.";
+    else if(m.includes("email not confirmed")) txt="Konto noch nicht bestätigt – in Supabase unter Authentication den User bestätigen („Auto Confirm").";
+    loginErr(txt); return;
+  }
   showApp(data.user);
-});
+}
+function loginErr(t){ $("loginMsg").textContent=t; $("loginMsg").classList.remove("hide"); }
+$("loginBtn").addEventListener("click", doLogin);
+["email","pass"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); }));
 $("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); showLogin(); });
 
 // ---------- Fahrten ----------
