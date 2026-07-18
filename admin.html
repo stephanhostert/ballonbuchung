@@ -106,6 +106,9 @@
   .reglist .rr .n{width:22px;height:22px;flex:none;border-radius:50%;background:var(--brand-soft);color:var(--brand-dark);font-family:var(--mono);font-size:.76rem;font-weight:600;display:grid;place-items:center;}
   .reglist .rr .who{flex:1;font-weight:600;}
   .reglist .rr .det{font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);}
+  .rr-del{width:30px;height:30px;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);cursor:pointer;display:grid;place-items:center;}
+  .rr-del:hover{border-color:#e7c2bb;color:var(--neg);background:#fff;}
+  .rr-del svg{width:15px;height:15px;}
   .empty{padding:16px;text-align:center;color:var(--ink-faint);font-size:.85rem;}
   .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;}
   .pill{font-family:var(--mono);font-size:.72rem;padding:3px 10px;border-radius:20px;background:var(--brand-soft);color:var(--brand-dark);font-weight:600;}
@@ -354,7 +357,7 @@ async function loadLive(){
   const { data:fresh } = await sb.from("fahrten").select("*").eq("id",fahrt.id).single();
   if(fresh) fahrt=fresh;
   const { data:regs } = await sb.from("anmeldungen")
-    .select("personen,gewicht_kg,created_at,contacts(vorname,name)")
+    .select("id,personen,gewicht_kg,created_at,contacts(vorname,name)")
     .eq("fahrt_id",fahrt.id).eq("status","bestaetigt").order("created_at",{ascending:true});
   const list=regs||[];
   const uPax=list.reduce((s,r)=>s+r.personen,0);
@@ -366,18 +369,29 @@ async function loadLive(){
   $("barPax").classList.toggle("full",uPax>=fahrt.max_personen);
   $("barKg").classList.toggle("full",uKg>=fahrt.max_gewicht_kg);
   const pill=$("statusPill"); pill.textContent=fahrt.status; pill.classList.toggle("closed",fahrt.status!=="offen");
+  $("closeBtn").textContent = fahrt.status==="offen" ? "Anmeldefenster schließen" : "Anmeldefenster öffnen";
   const box=$("reglist");
   if(!list.length){ box.innerHTML='<div class="empty">Noch keine Anmeldungen.</div>'; }
   else { box.innerHTML=""; list.forEach((r,i)=>{
     const c=r.contacts||{}; const row=document.createElement("div"); row.className="rr";
-    row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span><span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`;
+    row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span><span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`+
+      `<button class="rr-del" data-del="${r.id}" title="Anmeldung löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>`;
     box.appendChild(row);
-  }); }
+  });
+  box.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delReg(b.dataset.del)));
+  }
+}
+async function delReg(id){
+  if(!confirm("Diese Anmeldung wirklich löschen? Der Platz wird wieder frei.")) return;
+  const { error } = await sb.from("anmeldungen").delete().eq("id",id);
+  if(error){ alert("Löschen fehlgeschlagen: "+error.message); return; }
+  loadLive();
 }
 $("refreshBtn").addEventListener("click", loadLive);
 $("closeBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
-  await sb.from("fahrten").update({status:"geschlossen"}).eq("id",fahrt.id);
+  const neu = fahrt.status==="offen" ? "geschlossen" : "offen";
+  await sb.from("fahrten").update({status:neu}).eq("id",fahrt.id);
   loadLive(); loadFahrten();
 });
 function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(loadLive,15000); }
