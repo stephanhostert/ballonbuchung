@@ -465,7 +465,7 @@ $("doneBtn").addEventListener("click", async ()=>{
 });
 $("cancelFahrtBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
-  const reason = prompt("Grund der Absage (z. B. Wetteränderung) – erscheint in der SMS:","");
+  const reason = prompt("Grund der Absage (z.B. Wetteraenderung) - erscheint in der SMS:","");
   if(reason===null) return;
   if(!confirm("Fahrt wirklich absagen? Alle zugesagten Passagiere werden per SMS informiert.")) return;
   const btn=$("cancelFahrtBtn"); btn.disabled=true; btn.textContent="Sende Absagen…";
@@ -482,7 +482,7 @@ $("delFahrtBtn").addEventListener("click", async ()=>{
   const { count } = await sb.from("anmeldungen").select("id",{count:"exact",head:true}).eq("fahrt_id",fahrt.id).eq("status","bestaetigt");
   const n = count||0;
   if(n>0){
-    if(!confirm("Achtung: "+n+" Person(en) haben bereits zugesagt.\nBeim Löschen werden sie NICHT informiert!\n\nEmpfehlung: zuerst „Fahrt absagen" – dann bekommen die Passagiere automatisch eine SMS.\n\nTrotzdem endgültig löschen (ohne Benachrichtigung)?")) return;
+    if(!confirm("Achtung: "+n+" Person(en) haben bereits zugesagt.\nBeim Loeschen werden sie NICHT informiert!\n\nEmpfehlung: zuerst 'Fahrt absagen' - dann bekommen die Passagiere automatisch eine SMS.\n\nTrotzdem endgueltig loeschen (ohne Benachrichtigung)?")) return;
   } else {
     if(!confirm("Diese Fahrt komplett löschen?\nAlle zugehörigen Daten werden mitgelöscht. (Für Testfahrten gedacht.)")) return;
   }
