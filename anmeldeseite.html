@@ -95,6 +95,10 @@
     border:none;border-radius:8px;cursor:pointer;transition:background .16s;}
   button.cta:hover{background:var(--brand-dark);}
   button.cta:disabled{background:#c7cdc4;cursor:not-allowed;}
+  .declinelink{display:block;text-align:center;margin-top:14px;font-size:.85rem;font-weight:600;color:var(--ink-soft);text-decoration:none;cursor:pointer;}
+  .declinelink span{border-bottom:1px solid var(--line);padding-bottom:1px;}
+  .declinelink:hover span{color:var(--neg);border-color:var(--neg);}
+  .result.bye .ic{background:var(--wood);}
   .screen{display:none;}
   .screen.show{display:block;}
   .result{text-align:center;padding:14px 6px 6px;}
@@ -187,6 +191,7 @@
       <div class="sum-row"><span class="lbl">Gesamtgewicht deiner Anmeldung</span><span><span id="sumKg">0</span> kg</span></div>
       <div id="errBox" class="status bad hide"><span class="ico">!</span><span id="errTxt"></span></div>
       <button class="cta" id="submitBtn">Verbindlich anmelden</button>
+      <a class="declinelink" id="declineBtn"><span>Ich kann bei diesem Termin nicht — absagen</span></a>
     </div>
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“</footer>
   </div>
@@ -220,6 +225,16 @@
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
 
+  <!-- Abgesagt -->
+  <div id="screen-bye" class="screen">
+    <div class="card"><div class="result bye">
+      <div class="ic">&#128075;</div>
+      <h2>Danke für die Rückmeldung</h2>
+      <p>Alles klar, dieser Termin ohne dich. Beim nächsten passenden Termin fragen wir wieder an.</p>
+    </div></div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
+  </div>
+
 </div>
 
 <script type="module">
@@ -237,7 +252,7 @@ const FAHRT = params.get("f");
 let info = null, pick = 1;
 
 function show(id){
-  ["screen-load","screen-info","screen-form","screen-ok","screen-no"].forEach(s=>{
+  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye"].forEach(s=>{
     $(s).classList.toggle("show", s===id);
   });
   window.scrollTo(0,0);
@@ -345,8 +360,16 @@ async function submit(){
 }
 function goNo(t,x){ $("noTitle").textContent=t; $("noText").textContent=x; show("screen-no"); }
 
+async function decline(){
+  const a=$("declineBtn"); a.style.pointerEvents="none";
+  const { data, error } = await sb.rpc("ablehnen", { p_token:TOKEN, p_fahrt:FAHRT });
+  a.style.pointerEvents="";
+  if(error || (data && !data.ok)){ showErr("Absage konnte nicht gespeichert werden – bitte nochmal."); return; }
+  show("screen-bye");
+}
 $("personSel").addEventListener("change", buildWeights);
 $("submitBtn").addEventListener("click", submit);
+$("declineBtn").addEventListener("click", decline);
 load();
 </script>
 </body>

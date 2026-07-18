@@ -94,6 +94,7 @@
   .badge.vip{color:#9a6b00;background:#fbeecb;border:1px solid #eed9a6;}
   .badge.ok{color:var(--pos);background:var(--pos-soft);border:1px solid #c4dcc1;}
   .badge.no{color:var(--neg);background:var(--neg-soft);border:1px solid #e7c2bb;}
+  .badge.decl{color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6;}
   .crow-actions{display:flex;gap:6px;flex:none;}
   .iconbtn{width:34px;height:34px;border-radius:7px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;display:grid;place-items:center;color:var(--ink-soft);}
   .iconbtn:hover{background:#fff;border-color:var(--brand);color:var(--brand-dark);}
@@ -203,6 +204,7 @@ const $ = (id)=>document.getElementById(id);
 let contacts = [];
 let curFlags = [];          // Flags im offenen Formular
 let filterFlags = [];       // aktive Filter-Flags in der Liste
+let absagen = {};           // contact_id -> Anzahl Absagen
 
 function normPhone(raw){
   if(!raw) return "";
@@ -239,6 +241,8 @@ async function loadContacts(){
   const { data, error } = await sb.from("contacts").select("*").order("name",{ascending:true});
   if(error){ $("clist").innerHTML='<div class="empty">Fehler: '+error.message+'</div>'; return; }
   contacts = data||[];
+  const { data:ab } = await sb.from("absagen_pro_kontakt").select("*");
+  absagen = {}; (ab||[]).forEach(r=>{ absagen[r.contact_id]=r.absagen; });
   // Datalist mit vorhandenen Flags füllen
   $("flagList").innerHTML = allFlags().map(f=>'<option value="'+f.replace(/"/g,'&quot;')+'">').join("");
   renderFilterbar();
@@ -276,7 +280,8 @@ function renderList(){
     const zeit = (c.wann_von||c.wann_bis)?(fmtD(c.wann_von)+"–"+fmtD(c.wann_bis)):"jederzeit";
     const badges =
       (c.prioritaet===1?'<span class="badge vip">VIP</span>':'') +
-      (c.consent?'<span class="badge ok">SMS ok</span>':'<span class="badge no">keine Einwilligung</span>');
+      (c.consent?'<span class="badge ok">SMS ok</span>':'<span class="badge no">keine Einwilligung</span>') +
+      (absagen[c.id]?'<span class="badge decl">'+absagen[c.id]+'× abgesagt</span>':'');
     const flagsHtml = (c.flags||[]).length ? '<div class="cflags">'+(c.flags||[]).map(f=>'<span class="flag-tag">'+f+'</span>').join("")+'</div>' : '';
     const row=document.createElement("div");
     row.className="crow"+(c.aktiv?"":" inact");

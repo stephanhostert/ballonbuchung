@@ -83,6 +83,12 @@
   .why.wann{color:#8a5a00;background:#f7ecd5;}
   .why.wind{color:var(--neg);background:var(--neg-soft);}
   .why.ok{color:var(--pos);background:var(--pos-soft);}
+  .filterbar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;align-items:center;}
+  .filterbar .lbl{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-right:2px;}
+  .fchip{font-size:.74rem;font-weight:600;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;cursor:pointer;}
+  .fchip.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .cflags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+  .flag-tag{display:inline-flex;font-size:.62rem;font-weight:700;color:var(--brand-dark);background:var(--brand-soft);border:1px solid #b9def0;border-radius:20px;padding:1px 8px;letter-spacing:.02em;}
   .msg{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.88rem;}
   .msg.ok{background:var(--pos-soft);border:1px solid #c4dcc1;color:var(--pos);}
   .msg.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
@@ -173,8 +179,9 @@
     <div class="card-head"><span class="step">2</span><span class="card-title">Empfänger auswählen<small>Vorgefiltert nach „Wann“ (Zeitraum) und „Wind“ (±45°).</small></span></div>
     <div class="rcpt-top">
       <div class="rcpt-sum"><b id="selCount">0</b> von <b id="totCount">0</b> gewählt · <span id="selPax">0</span> mögl. Plätze</div>
-      <div><button class="mini" id="selMatch">nur Passende</button> · <button class="mini" id="selAll">alle</button> · <button class="mini" id="selNone">keine</button></div>
+      <div><button class="mini" id="selMatch">nur Passende</button> · <button class="mini" id="selAll">alle (sichtbar)</button> · <button class="mini" id="selNone">keine (sichtbar)</button></div>
     </div>
+    <div class="filterbar" id="rcptFlags"></div>
     <div class="clist" id="clist"><div class="empty">Lädt…</div></div>
     <button class="cta" id="sendBtn">SMS an <span id="sendN">0</span> Empfänger senden</button>
     <div id="sendMsg" class="msg ok hide"></div>
@@ -209,6 +216,7 @@ let fahrt = null;         // aktuelle Fahrt
 let contacts = [];        // Vorschlagsliste
 let chosen = {};          // id -> bool
 let pollTimer = null;
+let rcptFlags = [];       // aktive Flag-Filter in der Empfängerauswahl
 const DIRS = ["N","NO","O","SO","S","SW","W","NW"];
 
 // ---------- Auth ----------
@@ -262,7 +270,7 @@ function activateFahrt(f){
   fahrt=f;
   $("rcptCard").classList.remove("hidden");
   $("liveCard").classList.remove("hidden");
-  chosen={};
+  chosen={}; rcptFlags=[];
   loadRecipients();
   loadLive();
   startPoll();
@@ -277,31 +285,56 @@ async function loadRecipients(){
   contacts.forEach(c=>{ if(chosen[c.id]===undefined) chosen[c.id]=c.passt; });
   renderRecipients();
 }
+function allRcptFlags(){
+  const set=new Set(); contacts.forEach(c=>(c.flags||[]).forEach(f=>set.add(f)));
+  return [...set].sort((a,b)=>a.localeCompare(b,"de"));
+}
+function visibleRcpt(){
+  return contacts.filter(c=>rcptFlags.every(f=>(c.flags||[]).includes(f)));
+}
+function renderRcptFlagbar(){
+  const bar=$("rcptFlags"); const flags=allRcptFlags();
+  if(!flags.length){ bar.innerHTML=""; return; }
+  bar.innerHTML='<span class="lbl">Flags:</span>';
+  flags.forEach(f=>{
+    const b=document.createElement("button");
+    b.className="fchip"+(rcptFlags.includes(f)?" on":"");
+    b.textContent=f;
+    b.addEventListener("click",()=>{
+      if(rcptFlags.includes(f)) rcptFlags=rcptFlags.filter(x=>x!==f); else rcptFlags.push(f);
+      renderRecipients();
+    });
+    bar.appendChild(b);
+  });
+}
 function renderRecipients(){
+  renderRcptFlagbar();
   const box=$("clist"); box.innerHTML="";
-  if(!contacts.length){ box.innerHTML='<div class="empty">Keine aktiven Kontakte mit Einwilligung.</div>'; }
-  let sel=0,pax=0;
-  contacts.forEach(c=>{
-    const on=chosen[c.id]; if(on){sel++;pax+=c.personen;}
+  const vis=visibleRcpt();
+  if(!vis.length){ box.innerHTML='<div class="empty">Keine passenden Kontakte'+(rcptFlags.length?' für diese Flags':' mit Einwilligung')+'.</div>'; }
+  vis.forEach(c=>{
+    const on=chosen[c.id];
     const why = c.passt?'<span class="why ok">passt</span>'
       : (!((c.wann_von==null||fahrt.datum>=c.wann_von)&&(c.wann_bis==null||fahrt.datum<=c.wann_bis))
           ? '<span class="why wann">außerhalb Zeitraum</span>'
           : '<span class="why wind">Wind passt nicht</span>');
     const vip=c.prioritaet===1?'<span class="vip">VIP</span>':'';
     const zeit=(c.wann_von||c.wann_bis)?((c.wann_von||"…")+"–"+(c.wann_bis||"…")):"jederzeit";
+    const flagsHtml=(c.flags||[]).length?'<div class="cflags">'+(c.flags||[]).map(f=>'<span class="flag-tag">'+f+'</span>').join("")+'</div>':'';
     const row=document.createElement("div"); row.className="crow"+(on?"":" off");
     row.innerHTML=`<input type="checkbox" ${on?"checked":""} data-id="${c.id}">
       <div class="cmain"><div class="cname">${c.name||""}, ${c.vorname||""} ${vip}</div>
-      <div class="cmeta">${c.handy||""} · ${c.personen} Pl. · ${zeit} · Wind ${c.wind_wunsch||"egal"}</div></div>${why}`;
+      <div class="cmeta">${c.handy||""} · ${c.personen} Pl. · ${zeit} · Wind ${c.wind_wunsch||"egal"}</div>${flagsHtml}</div>${why}`;
     box.appendChild(row);
   });
   box.querySelectorAll("input[type=checkbox]").forEach(inp=>inp.addEventListener("change",function(){ chosen[this.getAttribute("data-id")]=this.checked; renderRecipients(); }));
+  let sel=0,pax=0; contacts.forEach(c=>{ if(chosen[c.id]){sel++;pax+=c.personen;} });
   $("selCount").textContent=sel; $("totCount").textContent=contacts.length; $("selPax").textContent=pax; $("sendN").textContent=sel;
   $("sendBtn").disabled = sel===0;
 }
-$("selMatch").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=c.passt); renderRecipients(); });
-$("selAll").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=true); renderRecipients(); });
-$("selNone").addEventListener("click",()=>{ contacts.forEach(c=>chosen[c.id]=false); renderRecipients(); });
+$("selMatch").addEventListener("click",()=>{ visibleRcpt().forEach(c=>chosen[c.id]=c.passt); renderRecipients(); });
+$("selAll").addEventListener("click",()=>{ visibleRcpt().forEach(c=>chosen[c.id]=true); renderRecipients(); });
+$("selNone").addEventListener("click",()=>{ visibleRcpt().forEach(c=>chosen[c.id]=false); renderRecipients(); });
 
 // ---------- SMS senden ----------
 $("sendBtn").addEventListener("click", async ()=>{
