@@ -170,6 +170,7 @@
         <div class="det"><div class="k">Uhrzeit</div><div class="v" id="dZeit">–</div></div>
         <div class="det"><div class="k">Treffpunkt</div><div class="v" id="dOrt">–</div></div>
         <div class="det"><div class="k">Wind</div><div class="v" id="dWind">–</div></div>
+        <div class="det" style="grid-column:1 / -1"><div class="k">Pilot (bei Rückfragen)</div><div class="v" id="dPilot">–</div></div>
       </div>
       <div class="cap">
         <div class="cap-row">
@@ -187,14 +188,9 @@
       <div class="card-head"><span class="bar"></span><span class="card-title">Anmeldung</span></div>
       <span class="fldlbl">Für wie viele Personen?</span>
       <div class="input-row">
-        <select id="personSel">
-          <option value="1">1 Person</option>
-          <option value="2">2 Personen</option>
-          <option value="3">3 Personen</option>
-          <option value="4">4 Personen</option>
-        </select>
+        <select id="personSel"></select>
       </div>
-      <div class="note">Wähle, für wie viele Personen dein Gutschein gilt (1–4).</div>
+      <div class="note" id="paxNote">Wähle die Personenzahl.</div>
       <div class="paxblock" id="weights"></div>
       <div class="sum-row"><span class="lbl">Gesamtgewicht deiner Anmeldung</span><span><span id="sumKg">0</span> kg</span></div>
       <div id="errBox" class="status bad hide"><span class="ico">!</span><span id="errTxt"></span></div>
@@ -307,6 +303,10 @@ async function load(){
   $("dDatum").textContent = fmtDate(f.datum);
   $("dZeit").textContent = (f.uhrzeit? f.uhrzeit.slice(0,5):"–") + " Uhr";
   $("dWind").textContent = f.wind || "–";
+  if(f.pilot_name || f.pilot_tel){
+    const ptel=(f.pilot_tel||"").replace(/\s+/g,"");
+    $("dPilot").innerHTML = (f.pilot_name||"") + (ptel? ' · <a href="tel:'+ptel+'" style="color:var(--brand-dark);font-weight:600;border-bottom:1px solid var(--wood)">'+f.pilot_tel+'</a>' : '');
+  } else { $("dPilot").textContent = "–"; }
 
   const ort = $("dOrt");
   ort.textContent = f.treffpunkt || "–";
@@ -326,10 +326,18 @@ async function load(){
   $("barPax").querySelector("i").style.width = usedPaxPct+"%";
   $("barKg").querySelector("i").style.width  = usedKgPct+"%";
 
-  buildWeights();
+  buildPersonOptions();
   show("screen-form");
 }
 
+function buildPersonOptions(){
+  const max = Math.max(1, (info && info.gutschein_personen) || 1);
+  const sel=$("personSel"); sel.innerHTML="";
+  for(let i=1;i<=max;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=i+(i===1?" Person":" Personen"); sel.appendChild(o); }
+  sel.value=String(max);
+  $("paxNote").textContent = "Dein Gutschein gilt für "+max+" "+(max===1?"Person":"Personen")+".";
+  buildWeights();
+}
 function buildWeights(){
   pick = parseInt($("personSel").value,10)||1;
   const box=$("weights"); box.innerHTML="";

@@ -361,8 +361,8 @@ function renderRecipients(){
     box.appendChild(row);
   });
   box.querySelectorAll("input[type=checkbox]").forEach(inp=>inp.addEventListener("change",function(){ chosen[this.getAttribute("data-id")]=this.checked; renderRecipients(); }));
-  let sel=0,pax=0; contacts.forEach(c=>{ if(chosen[c.id]){sel++;pax+=c.personen;} });
-  $("selCount").textContent=sel; $("totCount").textContent=contacts.length; $("selPax").textContent=pax; $("sendN").textContent=sel;
+  let sel=0,pax=0; vis.forEach(c=>{ if(chosen[c.id]){sel++;pax+=c.personen;} });
+  $("selCount").textContent=sel; $("totCount").textContent=vis.length; $("selPax").textContent=pax; $("sendN").textContent=sel;
   $("sendBtn").disabled = sel===0;
 }
 $("selMatch").addEventListener("click",()=>{ visibleRcpt().forEach(c=>chosen[c.id]=c.passt); renderRecipients(); });
@@ -371,7 +371,7 @@ $("selNone").addEventListener("click",()=>{ visibleRcpt().forEach(c=>chosen[c.id
 
 // ---------- SMS senden ----------
 $("sendBtn").addEventListener("click", async ()=>{
-  const ids=contacts.filter(c=>chosen[c.id]).map(c=>c.id);
+  const ids=visibleRcpt().filter(c=>chosen[c.id]).map(c=>c.id);
   if(!ids.length) return;
   $("sendBtn").disabled=true; $("sendBtn").textContent="Sende…";
   const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, contact_ids:ids } });
