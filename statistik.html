@@ -44,8 +44,7 @@
   .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
   .card + .card{margin-top:18px;}
   /* Übersichtskarten */
-  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
-  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px;}
   .stat{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:16px 18px;box-shadow:var(--shadow);}
   .stat .k{font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);}
   .stat .v{font-family:var(--mono);font-size:1.7rem;font-weight:600;margin-top:6px;line-height:1;}
@@ -68,6 +67,7 @@
   tbody td:first-child{text-align:left;font-weight:600;font-family:var(--sans);}
   tbody tr:hover{background:var(--surface-2);}
   .num0{color:var(--ink-faint);}
+  .offtag{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:700;color:var(--neg);background:var(--neg-soft);border:1px solid #e7c2bb;border-radius:20px;padding:1px 7px;letter-spacing:.03em;vertical-align:middle;text-transform:uppercase;}
   .quota{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
   .qbar{width:60px;height:7px;background:#ece6d8;border-radius:5px;overflow:hidden;flex:none;}
   .qbar>i{display:block;height:100%;border-radius:5px;}
@@ -129,6 +129,7 @@
     <div class="stat"><div class="k">Einladungen</div><div class="v" id="sEin">–</div></div>
     <div class="stat"><div class="k">Anmeldungen</div><div class="v" id="sAnm">–</div></div>
     <div class="stat"><div class="k">Absagen</div><div class="v" id="sAbs">–</div></div>
+    <div class="stat"><div class="k">Abgemeldet</div><div class="v" id="sOff">–</div></div>
   </div>
 
   <div class="card">
@@ -183,7 +184,7 @@ $("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); sh
 // ---- Daten laden ----
 async function loadData(){
   const [c, ein, abs, anm, fahrten] = await Promise.all([
-    sb.from("contacts").select("id,vorname,name"),
+    sb.from("contacts").select("id,vorname,name,abgemeldet"),
     sb.from("einladungen_pro_kontakt").select("*"),
     sb.from("absagen_pro_kontakt").select("*"),
     sb.from("anmeldungen_pro_kontakt").select("*"),
@@ -202,7 +203,8 @@ async function loadData(){
       e, a, d,
       aq: e>0 ? d/e : null,     // Absagequote
       zq: e>0 ? a/e : null,     // Zusagequote
-      zuletzt: mZ[c.id]||null
+      zuletzt: mZ[c.id]||null,
+      abgemeldet: !!c.abgemeldet
     };
   });
 
@@ -212,6 +214,7 @@ async function loadData(){
   $("sEin").textContent=rows.reduce((s,r)=>s+r.e,0);
   $("sAnm").textContent=rows.reduce((s,r)=>s+r.a,0);
   $("sAbs").textContent=rows.reduce((s,r)=>s+r.d,0);
+  $("sOff").textContent=rows.filter(r=>r.abgemeldet).length;
 
   render();
 }
@@ -242,7 +245,7 @@ function render(){
     const zqBar = r.zq==null?'' : `<div class="qbar pos"><i style="width:${Math.round(r.zq*100)}%"></i></div>`;
     const z=(v)=>v?String(v):'<span class="num0">0</span>';
     return `<tr>
-      <td>${r.name||"—"}</td>
+      <td>${r.name||"—"}${r.abgemeldet?'<span class="offtag">abgemeldet</span>':''}</td>
       <td>${z(r.e)}</td>
       <td>${z(r.a)}</td>
       <td>${z(r.d)}</td>

@@ -96,6 +96,7 @@
   .badge.no{color:var(--neg);background:var(--neg-soft);border:1px solid #e7c2bb;}
   .badge.decl{color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6;}
   .badge.inv{color:var(--brand-dark);background:var(--brand-soft);border:1px solid #b9def0;}
+  .badge.off{color:#fff;background:var(--neg);border:1px solid var(--neg);}
   .crow-actions{display:flex;gap:6px;flex:none;}
   .iconbtn{width:34px;height:34px;border-radius:7px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;display:grid;place-items:center;color:var(--ink-soft);}
   .iconbtn:hover{background:#fff;border-color:var(--brand);color:var(--brand-dark);}
@@ -125,6 +126,7 @@
     </div>
     <div class="topbar-right">
       <a href="admin.html" id="lnkAdmin" class="hidden">Fahrtplanung</a>
+      <a href="statistik.html" id="lnkStat" class="hidden">Statistik</a>
       <a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener" id="lnkTk" class="hidden">Tragkraft-Rechner</a>
       <span id="whoami"></span>
       <button id="logoutBtn" class="hidden">Abmelden</button>
@@ -174,6 +176,7 @@
       <div class="field full"><label>Bemerkung</label><textarea id="fBemerkung"></textarea></div>
       <div class="field full"><label class="check"><input type="checkbox" id="fConsent"><span>Einwilligung SMS-Empfang liegt vor <span class="sub">(nur dann bekommt der Kontakt SMS – DSGVO)</span></span></label></div>
       <div class="field full"><label class="check"><input type="checkbox" id="fAktiv" checked><span>Aktiv <span class="sub">(inaktive werden nicht angeschrieben, bleiben aber gespeichert)</span></span></label></div>
+      <div class="field full"><label class="check"><input type="checkbox" id="fAbg"><span>Hat sich abgemeldet <span class="sub">(kein Interesse mehr – wird nicht mehr eingeladen; Haken entfernen reaktiviert)</span></span></label></div>
     </div>
     <div id="editMsg" class="msg bad hide"></div>
     <div class="form-actions">
@@ -228,8 +231,8 @@ async function initAuth(){
   const { data:{ session } } = await sb.auth.getSession();
   if(session) showApp(session.user); else showLogin();
 }
-function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkTk"].forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
-function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkTk"].forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadContacts(); }
+function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk"].forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk"].forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadContacts(); }
 $("loginBtn").addEventListener("click", async ()=>{
   $("loginMsg").classList.add("hide");
   const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
@@ -284,6 +287,7 @@ function renderList(){
     const zeit = (c.wann_von||c.wann_bis)?(fmtD(c.wann_von)+"–"+fmtD(c.wann_bis)):"jederzeit";
     const badges =
       (c.prioritaet===1?'<span class="badge vip">VIP</span>':'') +
+      (c.abgemeldet?'<span class="badge off">abgemeldet</span>':'') +
       (c.consent?'<span class="badge ok">SMS ok</span>':'<span class="badge no">keine Einwilligung</span>') +
       (einladungen[c.id]?'<span class="badge inv">'+einladungen[c.id]+'× eingeladen</span>':'') +
       (absagen[c.id]?'<span class="badge decl">'+absagen[c.id]+'× abgesagt</span>':'');
@@ -342,6 +346,7 @@ function openForm(c){
   $("fBemerkung").value = c?.bemerkung||"";
   $("fConsent").checked = !!c?.consent;
   $("fAktiv").checked = c? !!c.aktiv : true;
+  $("fAbg").checked = !!c?.abgemeldet;
   curFlags = c && Array.isArray(c.flags) ? [...c.flags] : [];
   $("flagInput").value="";
   renderCurFlags();
@@ -369,7 +374,9 @@ $("saveBtn").addEventListener("click", async ()=>{
     bemerkung:$("fBemerkung").value.trim()||null,
     consent:$("fConsent").checked,
     consent_at:$("fConsent").checked?new Date().toISOString():null,
-    aktiv:$("fAktiv").checked
+    aktiv:$("fAktiv").checked,
+    abgemeldet:$("fAbg").checked,
+    abgemeldet_at:$("fAbg").checked?new Date().toISOString():null
   };
   const id = $("fId").value;
   let error;

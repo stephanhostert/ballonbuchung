@@ -99,6 +99,8 @@
   .declinelink span{border-bottom:1px solid var(--line);padding-bottom:1px;}
   .declinelink:hover span{color:var(--neg);border-color:var(--neg);}
   .result.bye .ic{background:var(--wood);}
+  .unsublink{display:inline-block;margin-top:8px;color:var(--ink-faint);text-decoration:underline;cursor:pointer;font-size:.76rem;}
+  .unsublink:hover{color:var(--neg);}
   .screen{display:none;}
   .screen.show{display:block;}
   .result{text-align:center;padding:14px 6px 6px;}
@@ -193,7 +195,8 @@
       <button class="cta" id="submitBtn">Verbindlich anmelden</button>
       <a class="declinelink" id="declineBtn"><span>Ich kann bei diesem Termin nicht — absagen</span></a>
     </div>
-    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“</footer>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“<br>
+      <a class="unsublink" id="unsubBtn">Keine Einladungen mehr erhalten? Hier abmelden</a></footer>
   </div>
 
   <!-- Bestätigung -->
@@ -235,6 +238,16 @@
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
 
+  <!-- Generell abgemeldet -->
+  <div id="screen-unsub" class="screen">
+    <div class="card"><div class="result bye">
+      <div class="ic">&#9993;</div>
+      <h2>Abgemeldet</h2>
+      <p>Du erhältst keine Einladungen mehr zu Ballonfahrten. Wenn du es dir anders überlegst, sag einfach dem Ballonteam Bescheid.</p>
+    </div></div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b></footer>
+  </div>
+
 </div>
 
 <script type="module">
@@ -252,7 +265,7 @@ const FAHRT = params.get("f");
 let info = null, pick = 1;
 
 function show(id){
-  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye"].forEach(s=>{
+  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub"].forEach(s=>{
     $(s).classList.toggle("show", s===id);
   });
   window.scrollTo(0,0);
@@ -367,9 +380,17 @@ async function decline(){
   if(error || (data && !data.ok)){ showErr("Absage konnte nicht gespeichert werden – bitte nochmal."); return; }
   show("screen-bye");
 }
+async function unsubscribe(){
+  if(!TOKEN) return;
+  if(!confirm("Möchtest du generell keine Einladungen zu Ballonfahrten mehr erhalten?")) return;
+  const { data, error } = await sb.rpc("abmelden", { p_token:TOKEN });
+  if(error || (data && !data.ok)){ showErr("Abmeldung fehlgeschlagen – bitte nochmal."); return; }
+  show("screen-unsub");
+}
 $("personSel").addEventListener("change", buildWeights);
 $("submitBtn").addEventListener("click", submit);
 $("declineBtn").addEventListener("click", decline);
+$("unsubBtn").addEventListener("click", unsubscribe);
 load();
 </script>
 </body>
