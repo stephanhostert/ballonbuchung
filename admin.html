@@ -210,6 +210,7 @@
       <button class="cta ghost" id="closeBtn">Anmeldefenster schließen</button>
       <button class="cta ghost" id="doneBtn" style="color:var(--pos);border-color:#c4dcc1">Fahrt durchgeführt</button>
       <button class="cta ghost" id="cancelFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt absagen</button>
+      <button class="cta ghost" id="delFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt löschen</button>
     </div>
   </div>
 
@@ -249,16 +250,23 @@ $("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); sh
 
 // ---------- Fahrten ----------
 async function loadFahrten(){
-  const { data } = await sb.from("fahrten").select("*").order("datum",{ascending:true});
+  const { data } = await sb.from("fahrten").select("*").order("datum",{ascending:false});
   const sel=$("fahrtSel");
   sel.innerHTML='<option value="">– neue Fahrt oben anlegen –</option>';
-  (data||[]).forEach(f=>{
-    const o=document.createElement("option"); o.value=f.id;
-    o.textContent=`${f.datum} ${(f.uhrzeit||"").slice(0,5)} · ${f.treffpunkt||""} · ${f.status}`;
-    sel.appendChild(o);
-  });
+  const list=data||[];
+  const statusLbl={offen:"offen",geschlossen:"geschlossen",durchgefuehrt:"durchgeführt",abgesagt:"abgesagt"};
+  const optText=(f)=>`${f.datum} ${(f.uhrzeit||"").slice(0,5)} · ${f.treffpunkt||""} · ${statusLbl[f.status]||f.status}`;
+  const addGroup=(label,arr)=>{
+    if(!arr.length) return;
+    const g=document.createElement("optgroup"); g.label=label;
+    arr.forEach(f=>{ const o=document.createElement("option"); o.value=f.id; o.textContent=optText(f); g.appendChild(o); });
+    sel.appendChild(g);
+  };
+  addGroup("Aktuelle Fahrten", list.filter(f=>f.status==="offen"||f.status==="geschlossen"));
+  addGroup("Durchgeführt / Abgesagt", list.filter(f=>f.status==="durchgefuehrt"||f.status==="abgesagt"));
+
   ortMaps={}; const orte=new Set();
-  (data||[]).forEach(f=>{ if(f.treffpunkt){ orte.add(f.treffpunkt); if(f.maps_link) ortMaps[f.treffpunkt]=f.maps_link; } });
+  list.forEach(f=>{ if(f.treffpunkt){ orte.add(f.treffpunkt); if(f.maps_link && !ortMaps[f.treffpunkt]) ortMaps[f.treffpunkt]=f.maps_link; } });
   $("ortList").innerHTML=[...orte].sort((a,b)=>a.localeCompare(b,"de")).map(o=>'<option value="'+o.replace(/"/g,'&quot;')+'">').join("");
   suggestMaps();
 }
@@ -450,6 +458,19 @@ $("cancelFahrtBtn").addEventListener("click", async ()=>{
   const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
   alert("Fahrt abgesagt. "+ok+"/"+total+" Passagier(e) per SMS informiert.");
   loadLive(); loadFahrten();
+});
+$("delFahrtBtn").addEventListener("click", async ()=>{
+  if(!fahrt) return;
+  if(!confirm("Diese Fahrt komplett löschen?\nAlle zugehörigen Anmeldungen, Einladungen und Absagen werden mitgelöscht. (Für Testfahrten gedacht.)")) return;
+  const { error } = await sb.from("fahrten").delete().eq("id",fahrt.id);
+  if(error){ alert("Löschen fehlgeschlagen: "+error.message); return; }
+  fahrt=null;
+  if(pollTimer) clearInterval(pollTimer);
+  $("liveCard").classList.add("hidden");
+  $("rcptCard").classList.add("hidden");
+  $("fahrtSel").value="";
+  await loadFahrten();
+  alert("Fahrt gelöscht.");
 });
 function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(loadLive,15000); }
 
