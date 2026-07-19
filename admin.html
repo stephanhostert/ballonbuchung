@@ -481,8 +481,11 @@ $("delFahrtBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
   const { count } = await sb.from("anmeldungen").select("id",{count:"exact",head:true}).eq("fahrt_id",fahrt.id).eq("status","bestaetigt");
   const n = count||0;
-  if(n>0){
+  const bereitsAbgesagt = fahrt.status==="abgesagt";
+  if(n>0 && !bereitsAbgesagt){
     if(!confirm("Achtung: "+n+" Person(en) haben bereits zugesagt.\nBeim Loeschen werden sie NICHT informiert!\n\nEmpfehlung: zuerst 'Fahrt absagen' - dann bekommen die Passagiere automatisch eine SMS.\n\nTrotzdem endgueltig loeschen (ohne Benachrichtigung)?")) return;
+  } else if(bereitsAbgesagt){
+    if(!confirm("Diese bereits abgesagte Fahrt endgültig löschen?\nDie Passagiere wurden beim Absagen schon per SMS informiert.")) return;
   } else {
     if(!confirm("Diese Fahrt komplett löschen?\nAlle zugehörigen Daten werden mitgelöscht. (Für Testfahrten gedacht.)")) return;
   }
