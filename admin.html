@@ -215,26 +215,9 @@
     </div>
   </div>
 
-  <!-- QR: Mitarbeiter & Freunde einladen -->
-  <div class="card" id="qrCard">
-    <div class="card-head"><span class="step">★</span><span class="card-title">Mitarbeiter &amp; Freunde einladen<small>QR-Code / Link zur Selbst-Eintragung</small></span></div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
-      <div id="qrBox" style="background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px;min-width:170px;min-height:170px;display:grid;place-items:center"></div>
-      <div style="flex:1;min-width:220px">
-        <p style="color:var(--ink-soft);font-size:.9rem;margin-bottom:12px">QR scannen lassen oder Link teilen. Wer sich einträgt, kommt automatisch mit Flag <b>Mitarbeiter</b> und erteilter Einwilligung in die Kontakte – ganz ohne Begrüßungs-SMS.</p>
-        <input id="qrLink" readonly style="width:100%;font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px">
-        <div class="actions">
-          <button class="cta ghost" id="qrCopyBtn">Link kopieren</button>
-          <button class="cta ghost" id="qrPrintBtn">QR drucken</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Admin · Fahrtplanung</footer>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
@@ -256,7 +239,7 @@ async function initAuth(){
   if(session) showApp(session.user); else showLogin();
 }
 function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("logoutBtn").classList.add("hidden"); $("whoami").textContent=""; }
-function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); renderQR(); scheduleWind(); }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); scheduleWind(); }
 
 async function doLogin(){
   $("loginMsg").classList.add("hide");
@@ -558,37 +541,6 @@ async function autoWind(){
 }
 function scheduleWind(){ clearTimeout(windTimer); windTimer=setTimeout(autoWind,600); }
 ["fOrt","fDatum","fZeit"].forEach(id=>{ $(id).addEventListener("change",scheduleWind); $(id).addEventListener("input",scheduleWind); });
-
-// ---- QR / Selbst-Eintragung ----
-function renderQR(){
-  const url = new URL("mitmachen-7q3v9k.html", location.href).href;
-  $("qrLink").value = url;
-  const box=$("qrBox"); box.innerHTML="";
-  if(window.QRCode){
-    new QRCode(box,{ text:url, width:150, height:150, colorDark:"#262420", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M });
-  } else {
-    box.textContent="QR konnte nicht geladen werden";
-  }
-}
-$("qrCopyBtn").addEventListener("click", async ()=>{
-  try{ await navigator.clipboard.writeText($("qrLink").value); const b=$("qrCopyBtn"); const t=b.textContent; b.textContent="Kopiert ✓"; setTimeout(()=>b.textContent=t,1500); }
-  catch(e){ $("qrLink").select(); }
-});
-$("qrPrintBtn").addEventListener("click", ()=>{
-  const url=$("qrLink").value;
-  const node=$("qrBox").querySelector("img") || $("qrBox").querySelector("canvas");
-  let src=""; if(node){ src = node.tagName==="CANVAS" ? node.toDataURL() : node.src; }
-  const w=window.open("","_blank","width=440,height=580");
-  if(!w) return;
-  w.document.write('<html><head><meta charset="utf-8"><title>Ballonteam - Mitmachen</title></head>'+
-    '<body style="font-family:system-ui,Arial,sans-serif;text-align:center;padding:34px;color:#262420">'+
-    '<h2 style="color:#0a7da9;letter-spacing:.06em;margin:0 0 4px">STEFFEN HOLZBAU BALLONTEAM</h2>'+
-    '<p style="margin:0 0 20px;font-size:15px">Scan mich - rein in die Ballonfahrt-Liste!</p>'+
-    (src?'<img src="'+src+'" style="width:280px;height:280px">':'')+
-    '<p style="font-size:11px;color:#666;word-break:break-all;margin-top:16px">'+url+'</p>'+
-    '</body></html>');
-  w.document.close(); w.focus(); setTimeout(()=>{ try{w.print();}catch(e){} }, 350);
-});
 
 initAuth();
 </script>
