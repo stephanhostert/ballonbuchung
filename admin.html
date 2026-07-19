@@ -164,8 +164,9 @@
       <div class="field"><label>Datum</label><input type="date" id="fDatum"></div>
       <div class="field"><label>Uhrzeit</label><input type="time" id="fZeit" value="06:00"></div>
       <div class="field"><label>Treffpunkt <span class="hint">(Ortsname – Vorschläge aus früheren Fahrten)</span></label><input type="text" id="fOrt" value="Hofweiler" list="ortList" autocomplete="off"><datalist id="ortList"></datalist></div>
-      <div class="field"><label>Windrichtung</label>
-        <select id="fWind"><option>N</option><option>NO</option><option>O</option><option>SO</option><option>S</option><option>SW</option><option>W</option><option selected>NW</option></select></div>
+      <div class="field"><label>Windrichtung <span class="hint">(automatisch aus der Wettervorhersage)</span></label>
+        <select id="fWind"><option>N</option><option>NO</option><option>O</option><option>SO</option><option>S</option><option>SW</option><option>W</option><option selected>NW</option></select>
+        <div id="windInfo" style="font-size:.76rem;color:var(--ink-faint);margin-top:6px;min-height:1em"></div></div>
       <div class="field"><label>Max. Personen</label><div class="input-row"><input type="number" id="fMaxPax" value="4" min="1" max="8"><span class="unit">Pers.</span></div></div>
       <div class="field"><label>Max. Gesamtgewicht</label><div class="input-row"><input type="number" id="fMaxKg" value="340" min="50" step="10"><span class="unit">kg</span></div></div>
       <div class="field"><label>Pilot</label>
@@ -214,9 +215,26 @@
     </div>
   </div>
 
+  <!-- QR: Mitarbeiter & Freunde einladen -->
+  <div class="card" id="qrCard">
+    <div class="card-head"><span class="step">★</span><span class="card-title">Mitarbeiter &amp; Freunde einladen<small>QR-Code / Link zur Selbst-Eintragung</small></span></div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+      <div id="qrBox" style="background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px;min-width:170px;min-height:170px;display:grid;place-items:center"></div>
+      <div style="flex:1;min-width:220px">
+        <p style="color:var(--ink-soft);font-size:.9rem;margin-bottom:12px">QR scannen lassen oder Link teilen. Wer sich einträgt, kommt automatisch mit Flag <b>Mitarbeiter</b> und erteilter Einwilligung in die Kontakte – ganz ohne Begrüßungs-SMS.</p>
+        <input id="qrLink" readonly style="width:100%;font-family:var(--mono);font-size:.8rem;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px">
+        <div class="actions">
+          <button class="cta ghost" id="qrCopyBtn">Link kopieren</button>
+          <button class="cta ghost" id="qrPrintBtn">QR drucken</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Admin · Fahrtplanung</footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
@@ -238,7 +256,7 @@ async function initAuth(){
   if(session) showApp(session.user); else showLogin();
 }
 function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("logoutBtn").classList.add("hidden"); $("whoami").textContent=""; }
-function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logoutBtn").classList.remove("hidden"); $("whoami").textContent=user.email; $("fDatum").value=new Date(Date.now()+864e5).toISOString().slice(0,10); loadFahrten(); renderQR(); scheduleWind(); }
 
 async function doLogin(){
   $("loginMsg").classList.add("hide");
@@ -502,6 +520,75 @@ $("delFahrtBtn").addEventListener("click", async ()=>{
 function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInterval(loadLive,15000); }
 
 function flash(id,kind,txt){ const e=$(id); e.className="msg "+kind; e.textContent=txt; e.classList.remove("hide"); }
+
+// ---- Windrichtung automatisch aus Wettervorhersage (Open-Meteo) ----
+const geoCache = {};
+let windTimer = null;
+function degToDir(deg){ return DIRS[Math.round(deg/45)%8]; }
+async function geocode(ort){
+  const key=ort.toLowerCase();
+  if(key in geoCache) return geoCache[key];
+  const u="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(ort)+"&count=1&language=de&format=json";
+  const r=await fetch(u); const j=await r.json();
+  const hit=(j.results&&j.results[0])||null;
+  geoCache[key]=hit; return hit;
+}
+async function autoWind(){
+  const ort=$("fOrt").value.trim(), datum=$("fDatum").value, zeit=$("fZeit").value||"06:00";
+  if(!ort || !datum) return;
+  $("windInfo").textContent="Wind wird geholt…";
+  try{
+    const g=await geocode(ort);
+    if(!g){ $("windInfo").textContent="Ort nicht gefunden – Wind bitte manuell wählen."; return; }
+    let hh=parseInt(zeit.slice(0,2),10)||6;
+    if((parseInt(zeit.slice(3,5),10)||0)>=30) hh=(hh+1)%24;
+    const u="https://api.open-meteo.com/v1/forecast?latitude="+g.latitude+"&longitude="+g.longitude+
+      "&hourly=winddirection_10m,windspeed_10m&timezone=auto&start_date="+datum+"&end_date="+datum;
+    const r=await fetch(u); const j=await r.json();
+    const times=(j.hourly&&j.hourly.time)||[];
+    if(!times.length){ $("windInfo").textContent="Keine Vorhersage für diesen Tag (evtl. zu weit in der Zukunft)."; return; }
+    const want=datum+"T"+String(hh).padStart(2,"0")+":00";
+    let idx=times.indexOf(want); if(idx<0) idx=0;
+    const deg=j.hourly.winddirection_10m[idx];
+    const spd=Math.round(j.hourly.windspeed_10m[idx]);
+    const dir=degToDir(deg);
+    $("fWind").value=dir;
+    $("windInfo").textContent="Vorhersage für "+g.name+": Wind aus "+dir+" ("+Math.round(deg)+"°, "+spd+" km/h) – anpassbar.";
+  }catch(e){ $("windInfo").textContent="Wetterabruf nicht möglich – Wind bitte manuell wählen."; }
+}
+function scheduleWind(){ clearTimeout(windTimer); windTimer=setTimeout(autoWind,600); }
+["fOrt","fDatum","fZeit"].forEach(id=>{ $(id).addEventListener("change",scheduleWind); $(id).addEventListener("input",scheduleWind); });
+
+// ---- QR / Selbst-Eintragung ----
+function renderQR(){
+  const url = new URL("beitreten.html", location.href).href;
+  $("qrLink").value = url;
+  const box=$("qrBox"); box.innerHTML="";
+  if(window.QRCode){
+    new QRCode(box,{ text:url, width:150, height:150, colorDark:"#262420", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M });
+  } else {
+    box.textContent="QR konnte nicht geladen werden";
+  }
+}
+$("qrCopyBtn").addEventListener("click", async ()=>{
+  try{ await navigator.clipboard.writeText($("qrLink").value); const b=$("qrCopyBtn"); const t=b.textContent; b.textContent="Kopiert ✓"; setTimeout(()=>b.textContent=t,1500); }
+  catch(e){ $("qrLink").select(); }
+});
+$("qrPrintBtn").addEventListener("click", ()=>{
+  const url=$("qrLink").value;
+  const node=$("qrBox").querySelector("img") || $("qrBox").querySelector("canvas");
+  let src=""; if(node){ src = node.tagName==="CANVAS" ? node.toDataURL() : node.src; }
+  const w=window.open("","_blank","width=440,height=580");
+  if(!w) return;
+  w.document.write('<html><head><meta charset="utf-8"><title>Ballonteam - Mitmachen</title></head>'+
+    '<body style="font-family:system-ui,Arial,sans-serif;text-align:center;padding:34px;color:#262420">'+
+    '<h2 style="color:#0a7da9;letter-spacing:.06em;margin:0 0 4px">STEFFEN HOLZBAU BALLONTEAM</h2>'+
+    '<p style="margin:0 0 20px;font-size:15px">Scan mich - rein in die Ballonfahrt-Liste!</p>'+
+    (src?'<img src="'+src+'" style="width:280px;height:280px">':'')+
+    '<p style="font-size:11px;color:#666;word-break:break-all;margin-top:16px">'+url+'</p>'+
+    '</body></html>');
+  w.document.close(); w.focus(); setTimeout(()=>{ try{w.print();}catch(e){} }, 350);
+});
 
 initAuth();
 </script>

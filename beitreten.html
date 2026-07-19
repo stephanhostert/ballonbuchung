@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  MITMACHEN / SELBST-EINTRAGUNG · STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Oeffentliche Seite (QR-Ziel). Mitarbeiter/Freunde tragen sich selbst ein.
+  Ruft RPC selbst_eintragen -> consent=true, Flag "Mitarbeiter".
+  (c) Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mitmachen · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:600px;margin:0 auto;padding:15px max(22px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;}
+  .wm-logo{width:42px;height:42px;flex:none;border-radius:7px;overflow:hidden;display:block;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:1.04rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
+  .wrap{max-width:600px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 60px;}
+  .hero{margin-bottom:24px;}
+  .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.08;letter-spacing:-.015em;}
+  .sub{color:var(--ink-soft);font-size:.95rem;margin-top:11px;}
+  .sub b{color:var(--ink);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
+  .field{margin-bottom:15px;}
+  .field:last-of-type{margin-bottom:0;}
+  .field label{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dark);font-weight:700;display:block;margin-bottom:7px;}
+  .field label .opt{color:var(--ink-faint);letter-spacing:0;text-transform:none;font-weight:500;}
+  .field input{width:100%;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:11px 12px;font-family:var(--sans);}
+  .field input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.2);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+  .status{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.9rem;}
+  .status.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
+  .status .ico{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:.85rem;color:#fff;background:var(--neg);}
+  .status.hide{display:none;}
+  button.cta{width:100%;margin-top:20px;padding:15px;font-size:1.02rem;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:8px;cursor:pointer;transition:background .16s;}
+  button.cta:hover{background:var(--brand-dark);}
+  button.cta:disabled{background:#c7cdc4;cursor:not-allowed;}
+  .note{color:var(--ink-faint);font-size:.8rem;margin-top:14px;}
+  .screen{display:none;}
+  .screen.show{display:block;}
+  .result{text-align:center;padding:14px 6px 6px;}
+  .result .ic{width:60px;height:60px;border-radius:50%;margin:0 auto 15px;display:grid;place-items:center;font-size:1.9rem;color:#fff;background:var(--pos);}
+  .result h2{font-size:1.35rem;margin-bottom:9px;}
+  .result p{color:var(--ink-soft);font-size:.92rem;max-width:360px;margin:0 auto;}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;line-height:1.7;}
+  footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
+  @media(max-width:560px){.wrap{padding:22px max(13px,env(safe-area-inset-left)) 46px;}.card{padding:17px;}h1{font-size:1.55rem;}.row2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <img class="wm-logo" alt="Steffen Holzbau" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ4AAACXCAIAAABr6HXkAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASdEVYdFNvZnR3YXJlAEdyZWVuc2hvdF5VCAUAAAyoSURBVHhe7Z3tT1vXHcfLQ9akSTo1UfqgrXvsNq3tVGmq2lVdp6kvJq2atK2rNDVTJ22aJk1ttfbFtnZL2rRpsxjzZBKICeQBCL42NmAIOBhsCA82YJ5sY2P7Pp5z8o9M9mUunHN9domDIHmyPfn5GeG0CGO3qac0BnYGw47yU996OKiGJMEQgQJi31x8XRQOeXJKme3LwN0BspNFUee6MfvzSkTKUHCWa8qmAjLonB5WXz+NqrZi+ZLZ6CsVHPZxjqclDYUMS91KzIW5nnxvTm5/GdfOgPl46SbNC5JMqJ1siDMT2XEF0dxNfMhxUNnoGSqOXLCjX8bUKYzIt5yBN6RhCyeDUvfGcTl6V7RGSiNh1z4J6OoaUnckGlzGPOynMKYV6MkJdPpaD6qIMwPJsQ3AsopN64qUTCdgWKpcpBvDeD3Z+VgWsKMVFFMhELBUCggyyn1xeXlub6+G5HIdP6VLc2Xt0akV3zoQSf9LbuAzkBRHO8jpydRT1Ta2gfOe43FIl5vb2urZXDwliQl1ddDoYDV+lF7e8PIiCudjlHvIkQIpsUP55VvD+Lq4povnYFdUsORHw2j5mVpVaTdZDvAcioYvH31amN9/ccWy5mBgZ6tai2WMxbLmcbGTzo7beHwJEIZ6u0ZJLji0m8m0EMu+nt3hs7Abjjqwn+akud5UcYaY5tYLHLtWktj4zlVYSG1Kk1N583um6nUGvUhCAtJWbAsSl/v3+XoiM6AMQ5x5IdDxBmX0PZ+kHoEFoS4z+dpbj6/VZ6+WhW7vX52dlySNqjuFSHCiiS85kfH+gxXr+gM7MQhjnx3EL0zowhaA1ZRTMzPT3Z3t9XVnWXN7ajWYjnT0HBuYKAnGp1HKM38pxHsq8oLI+iYy0D/mc5AYaq5e4958OsTyuC6RiECoczq6vzQEMc21l2pVbHb6ycmhjY2Vqnmi4kQ4sW/zyk/8OJafbt0BgpQy+GXcgPWZYGWSoiQSkXHxgY6Opo1G2sRai2WM1brRxzXMTc3IUkb1NdlkNAbE98IoOM63Ss6A1qccJMPwtJESlSYsY2ipMPhYG/v1cbGT1g9FLtSq9q9fPmi1+tIJJbZs++iILStyk8PIe3REZ2B7dRy+NU7ynhKzCi0VEKEdDo2NMS1tFzQb6x5dqtWpb7+XHt749zcBMb06EjBwlxGfHdWeZhtvnQGtvCoGzUtSYKWVIz5paUZm+1z1oQOxalVqas763BczWQ0ihsKyvQnpB9TFwfZ3wNUZY/A+HcBFEhLGvtRScXjiy7XNYMtdSulqFWx2S5MTo7yfJytb0TF7MXBJ/v/L5j9Yfc5R1z3XvZhy6IkMX1gjPlkciUQGL5ypa4Ir2VRm6teneO4zkhkmu1eYcy7YuKv/MpJNwa1X1DDke978Xtz8gKvUVqSpI1QKGCwu1SIsqhVD852e/3t265EYoXtXqVl8bMFCdRuctyF35xUnHFJZPrAGPOJxIrH09XaaimuseYpl1qV+vqPb95sm5z0sdeOZCSA2mwh4ukh3LIkr4o8dTEu11hTfv9gR0ej1VqSVJXyqlVpabngcl2LxyNU873f1dZy+HRQWZc0BqwY89HofFdXa0PDF/X9EtkLterxua3NEggMb22+96naKo486CTPDmF/quAcl4WFqebmT9n9WAp7pFYlV73qjMU2m+/9qPYQR77nxf8My1FRo7uUJxQKlnhmZdlTtSo222fB4EgyuXrfqT3pJr8Pyq6YqCC6Y4lQJplcyY8Xv6Rq1eNzT4/9PlJb6yQvjiLbkhQVaam5+v6a3z/o9faKYn7Xf1nV5jh7v6h91IM/WZACKY0jMEL84uJ0V1drU9P5rq5Wnl83hdoz5ld7iCOvjSNvQmPAql4593i6bLbPVYug9stBVa6+f35BUpiSYW5sk5mfn2po2NYHBrUHnWru3kk3+aVfWdDqAytKKhZbdDqv1dfTA1ZQe6A56sI/86HmJYkdsGLMp1JrY2ODV65Y2X0Bag8uNdlZhvj9OTnMaxQiZDk1PT3GcZ1W60fsjlABtQeRoy78RgD1r4sZ5syam7+/2N/fs+OVc1B7sKjiyDcGcE9MXtEasErSxvi4t729oa6uYGPNA2oPEEdc5O1ZJalkZ3GyXmOxSFdXq3pThhFA7f5TxZEjTvL8CO5fFzXn7/N8PBC4XV+/c0vdCqjdZ2py9f1/hOQ1rTuoeH59YWGqo6OxCDGgdt+o4u6dcOO3prLTIVipufn7ocHBWzrz9/UBtfvDV5zk1TuoYUniFfoInGus8Tt3+js7m3XGNjsCaitNlYN8bYB8EJZnMqLCnFkR4iORmRs3LjU0FD8hTQXUVpTs/P0xfGdD4pkBq9pYnc7rOw5YDQJqK0Q1d+8RN764qFEyVG+2mZ0db221sL+qaEDtnlPNkcc8+NcTynqBlbQIEWZnx8syy3AroHZvOeYir/iQfUXWuoPqixPtzIyf/T0lAmr3iipH9obzf4flKa2bbWR5IxSakKTN+ZigVp8DpPawk/xxSnGva6/Ps7Y239/f3d7ekMnEQa0RDoTa3Px91B2V1AVlmcaaXZ/nyhWr1fpxc/P5/F2IoFaf/Vd71IXfnVHWJJGt7+eunEfb2xus1s36Pqg1zn6qPZybPdobk9h7zRDiM5nY6Kg7L1UF1Bpnf9TWcvjp4ez6PJp9YJ5fD4WC1661sHsW1Bqn0mqrHOTxfnx6UhlNimxjxZhfXQ0NDPTYbJ+xfyuo3RUVVfsVDv/cp1xaltYlWiohgiCs377t6uy0sX9lHlBrnMqpPeUmH4blmbTG7Y4IZUKhia6u1h0v2oBa41RCbTVHXhpFc7zArnyn9oE9nm6DtzuCWuPsrdoajjzuwe2rcoH6fmp+fvLy5Yvsn1UIUGucvVJb7cjW908HlZm0Rn1fUVLR6ILbfXO3+w7UGmdP1B52klfHcMuSxB6BEcqsry9NTAwV6gPrA2qNU2a11dy9pwbxf8LSXEajvi9JydnZ8dzqEEVOhwC1ximn2mN9+C93FXd29Wdaam59nqW+vhu7OrOygFrjlEdtNUeeG0b2FSkhZ5djprwqStrvH2hrqyv9yjmoNU4Z1B5xkT/fVTbkQvP3F9vbG3c71bsQoNY4Jak96iLPDuMRrZKhemb1+TxNTUVOCdYE1BqnSLWHOPLMEP5XWGYvm+dZWQnZ7fXsV5YCqDXOrtVWObKP7PzDpDyS1C4ZglodDq7aGo68PIraV+QoMx0CYz6dXhsf9+ZXcgW1LAdU7Vf7iCUiTac1pkMglAmHAzdvXr506aIgbO4aUMty4NTWcOQ1f/aRnTJzBM5djEt4PN1NTZ/W1Z1tajoPanU4QGprOfLNAdy8JGsu6a0oqUhkeuvSz6BWn4Oi9jEPfnMKzWQ06vuSlFpbm+/tvUpdYQW1+uy/2iMu8gs/si2J7GJaCGUSiRWfz6N5sw2o1Wc/1VZnH9mJPwjLa5JGY0UofffuWE+PvdB0CFCrz76pfbiPvDUlDye1lzOMxyMOR2dLywX2U/KAWn32R+1TXtwdFeOSRn1fllM+n7utbecnoIBafSqtttpB/jajaA5scjfbhK9fb2HfqQmo1aeial8YRRMZjfp+fjnDrQ9N3hFQq09F1ca0ukuCsB4OBzs6mnb720CtPhVVS0lFKBOJzPT3d7MLyhoB1Oqzb2pTqejoqMdurzeynKEmoFaffVCLMb+wMHX9uq2UB8aB2h2ptFpJSt26ZW9szNb32S12BajVp6JqZ2bGipsSrAmo1aeiao0vKGsEUKtPRdWyL5UCqNUH1BYE1BoH1G4D1BYE1OoDagsCao0DarcBagsCavUBtQUBtcYBtdsAtQUBtfqA2oKAWuOA2m2A2oKAWn1AbUFArXFA7TZAbUFArT6gtiCg1jigdhugtiCgVh9Qu8nxh594+52/bn0F1BrnAa/XUUZGR/tkefPpWRsbq36/l93GOI+cePK5516ss/43/0ru8zdXuInFFti3lMjk5Ej+6V/xeGR4mGO3KYVQKKgo6fznsxuUkf8B9PlaAyc1hv8AAAAASUVORK5CYII=">
+    <div>
+      <div class="wm-name">STEFFEN <span>HOLZBAU</span></div>
+      <div class="wm-tag">BALLONTEAM</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Formular -->
+  <div id="screen-form" class="screen show">
+    <div class="hero">
+      <div class="kicker">Ballonteam · Mitmachen</div>
+      <h1>Auf die Ballonfahrt-Liste</h1>
+      <div class="sub">Trag dich hier ein, dann laden wir dich per <b>SMS</b> ein, sobald eine Ballonfahrt ansteht – <b>wer zuerst kommt, fährt.</b></div>
+    </div>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label>Vorname</label><input type="text" id="fVorname" autocomplete="given-name"></div>
+        <div class="field"><label>Name</label><input type="text" id="fName" autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label>Ort <span class="opt">(optional)</span></label><input type="text" id="fOrt" autocomplete="address-level2"></div>
+      <div class="field"><label>Handynummer</label><input type="tel" id="fHandy" inputmode="tel" placeholder="+352 691 000000 oder 0151 …" autocomplete="tel"></div>
+      <div id="errBox" class="status bad hide"><span class="ico">!</span><span id="errTxt"></span></div>
+      <button class="cta" id="submitBtn">Eintragen</button>
+      <div class="note">Mit dem Eintragen bist du einverstanden, per SMS über Ballonfahrten informiert zu werden. Du kannst dich jederzeit über den Link in der SMS wieder abmelden.</div>
+    </div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“</footer>
+  </div>
+
+  <!-- Danke -->
+  <div id="screen-ok" class="screen">
+    <div class="card"><div class="result">
+      <div class="ic">&#10003;</div>
+      <h2>Du bist dabei! 🎈</h2>
+      <p>Danke, <b id="okName"></b>! Wir haben dich auf der Liste. Sobald eine Ballonfahrt ansteht, bekommst du eine SMS mit deinem Anmeldelink.</p>
+    </div></div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
+  </div>
+
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_R7dJv2fCtG8ud3dDCaeqUQ_9BfG52EI";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id)=>document.getElementById(id);
+
+function show(id){ ["screen-form","screen-ok"].forEach(s=>$(s).classList.toggle("show", s===id)); window.scrollTo(0,0); }
+function showErr(t){ $("errTxt").textContent=t; $("errBox").classList.remove("hide"); }
+function clearErr(){ $("errBox").classList.add("hide"); }
+
+async function submit(){
+  clearErr();
+  const vorname=$("fVorname").value.trim();
+  const name=$("fName").value.trim();
+  const ort=$("fOrt").value.trim();
+  const handy=$("fHandy").value.trim();
+  if(!vorname && !name){ showErr("Bitte Vor- und Nachnamen eintragen."); return; }
+  if(handy.replace(/[^0-9]/g,"").length < 6){ showErr("Bitte eine gültige Handynummer eintragen."); return; }
+  const btn=$("submitBtn"); btn.disabled=true; btn.textContent="Wird eingetragen…";
+  const { data, error } = await sb.rpc("selbst_eintragen", { p_vorname:vorname, p_name:name, p_ort:ort, p_handy:handy });
+  btn.disabled=false; btn.textContent="Eintragen";
+  if(error){ showErr("Verbindungsfehler – bitte nochmal versuchen."); return; }
+  if(!data || !data.ok){
+    showErr(data && data.reason==="handy" ? "Bitte eine gültige Handynummer eintragen." : "Eintragen nicht möglich – bitte prüfen.");
+    return;
+  }
+  $("okName").textContent = vorname || name;
+  show("screen-ok");
+}
+$("submitBtn").addEventListener("click", submit);
+$("fHandy").addEventListener("keydown",(e)=>{ if(e.key==="Enter") submit(); });
+</script>
+</body>
+</html>
