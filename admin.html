@@ -134,6 +134,7 @@
     <div class="topbar-right">
       <a href="kontakte.html">Kontakte</a>
       <a href="statistik.html">Statistik</a>
+      <a href="fahrtenbuch.html">Fahrtenbuch</a>
       <a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener">Tragkraft-Rechner</a>
       <a href="anleitung.html" target="_blank" rel="noopener">Hilfe</a>
       <span id="whoami"></span><button id="logoutBtn" class="hidden">Abmelden</button>
@@ -461,8 +462,26 @@ $("doneBtn").addEventListener("click", async ()=>{
     if(!error) n++;
   }
   await sb.from("fahrten").update({status:"durchgefuehrt"}).eq("id",fahrt.id);
+
+  // Fahrtenbuch-Entwurf anlegen (Zeiten/Landeort spaeter im Fahrtenbuch nachtragen)
+  let fbMsg="";
+  const pilotName=(fahrt.pilot_name||"").trim();
+  if(pilotName){
+    const { count:fbC } = await sb.from("fahrtenbuch").select("id",{count:"exact",head:true}).eq("fahrt_id",fahrt.id);
+    if(!fbC){
+      const { error:fbErr } = await sb.from("fahrtenbuch").insert({
+        fahrt_id:fahrt.id, pilot:pilotName, rolle:"pilot", datum:fahrt.datum,
+        startort:fahrt.treffpunkt||null, landungen:1
+      });
+      fbMsg = fbErr ? "\n\nFahrtenbuch-Eintrag fehlgeschlagen: "+fbErr.message
+                    : "\n\nEin Fahrtenbuch-Entwurf wurde angelegt - Zeiten, Landeort und Gas bitte im Fahrtenbuch nachtragen.";
+    } else {
+      fbMsg = "\n\n(Fahrtenbuch-Eintrag war bereits vorhanden.)";
+    }
+  }
+
   btn.disabled=false; btn.textContent="Fahrt durchgeführt";
-  alert("Fahrt als durchgeführt markiert. "+n+" Gutschein-Kontakt(e) auf inaktiv gesetzt.");
+  alert("Fahrt als durchgeführt markiert. "+n+" Gutschein-Kontakt(e) auf inaktiv gesetzt."+fbMsg);
   loadLive(); loadFahrten();
 });
 $("cancelFahrtBtn").addEventListener("click", async ()=>{

@@ -98,6 +98,7 @@
       <a href="#live">Anmeldungen</a>
       <a href="#abschluss">Nach der Fahrt</a>
       <a href="#kontakte">Kontakte</a>
+      <a href="#fahrtenbuch">Fahrtenbuch</a>
       <a href="#passagier">Was der Gast sieht</a>
       <a href="#faq">Wenn's klemmt</a>
     </div>
@@ -118,6 +119,7 @@
       <li><b>Fahrtplanung</b> (<code>admin.html</code>) — Termine anlegen, einladen, Anmeldungen sehen</li>
       <li><b>Kontakte</b> (<code>kontakte.html</code>) — Interessenten pflegen, Begrüßungs-SMS, QR-Code</li>
       <li><b>Statistik</b> (<code>statistik.html</code>) — wer wurde wie oft eingeladen, wer sagt oft ab</li>
+      <li><b>Fahrtenbuch</b> (<code>fahrtenbuch.html</code>) — Nachweis deiner Fahrten mit laufenden Summen</li>
     </ul>
     <p>Oben rechts auf jeder Seite kannst du zwischen ihnen wechseln.</p>
   </div>
@@ -189,7 +191,7 @@
   <div class="card" id="abschluss">
     <div class="card-head"><span class="step">7</span><span class="card-title">Nach der Fahrt: abschließen oder absagen</span></div>
     <h3>Fahrt durchgeführt</h3>
-    <p>Markiert die Fahrt als erledigt. Alle Passagiere <b>mit Gutschein-Nummer</b> werden automatisch auf <b>inaktiv</b> gesetzt und bekommen in ihrer Bemerkung den Eintrag <b>„Gefahren am …"</b>. Fährt jemand später nochmal mit, setzt du ihn in den Kontakten einfach wieder auf aktiv — ein weiterer Eintrag wird dann zusätzlich angehängt.</p>
+    <p>Markiert die Fahrt als erledigt. Zusätzlich wird ein <b>Fahrtenbuch-Entwurf</b> angelegt (siehe unten). Alle Passagiere <b>mit Gutschein-Nummer</b> werden automatisch auf <b>inaktiv</b> gesetzt und bekommen in ihrer Bemerkung den Eintrag <b>„Gefahren am …"</b>. Fährt jemand später nochmal mit, setzt du ihn in den Kontakten einfach wieder auf aktiv — ein weiterer Eintrag wird dann zusätzlich angehängt.</p>
     <h3>Fahrt absagen</h3>
     <p>Du gibst einen Grund an (z. B. Wetteränderung). Alle Passagiere, die zugesagt hatten, bekommen <b>automatisch eine Absage-SMS</b> mit diesem Grund. Die Fahrt wird als abgesagt markiert.</p>
     <h3>Fahrt löschen</h3>
@@ -210,6 +212,27 @@
     <h3>Mitarbeiter &amp; Freunde per QR einladen</h3>
     <p>Unten auf der Kontakte-Seite findest du einen <b>QR-Code</b> mit Link zur Mitmach-Seite. Wer ihn scannt, trägt sich selbst mit Name, Ort und Handynummer ein und landet automatisch mit dem Flag <b>Mitarbeiter</b>, Gutschein <b>MA</b> und erteilter Einwilligung in den Kontakten — ganz ohne Begrüßungs-SMS. Über <b>„QR drucken"</b> bekommst du einen fertigen Aushang.</p>
     <div class="warn"><b>Bitte nicht öffentlich streuen:</b> Der Link zur Mitmach-Seite ist bewusst nicht auffindbar und soll nur gezielt weitergegeben werden (QR zeigen, Aushang, direkte Nachricht).</div>
+  </div>
+
+
+  <!-- Fahrtenbuch -->
+  <div class="card" id="fahrtenbuch">
+    <div class="card-head"><span class="step">8b</span><span class="card-title">Fahrtenbuch</span></div>
+    <p>Wenn du eine Fahrt auf <b>„Fahrt durchgeführt"</b> setzt, legt die App automatisch einen <b>Entwurf</b> im Fahrtenbuch an — mit Pilot, Datum und Startort. Zeiten, Landeort, Landungen und Gas trägst du danach auf der Seite <b>Fahrtenbuch</b> nach. Solange etwas fehlt, ist der Eintrag als <b>unvollständig</b> markiert.</p>
+    <h3>Eintrag ausfüllen</h3>
+    <ul>
+      <li><b>Rolle</b> — Umschalter <b>Pilot</b> oder <b>Mitfahrer</b>. Die Fahrzeit wird je nach Rolle in die passende Spalte gezählt.</li>
+      <li><b>Ballon-Kennung</b> — Vorschlagsliste, die mit jeder neuen Kennung mitwächst.</li>
+      <li><b>Start- und Landezeit in UTC</b> — daraus wird die <b>Fahrzeit</b> automatisch berechnet.</li>
+      <li><b>Gasverbrauch in Litern</b> — daraus wird automatisch <b>l/h</b> berechnet.</li>
+      <li><b>Landungen</b> und <b>Bemerkung</b> nach Bedarf.</li>
+    </ul>
+    <h3>Startwerte aus dem Papier-Fahrtenbuch</h3>
+    <p>Wähle oben einen <b>Piloten</b> aus, dann erscheinen die Felder für die Startwerte: bisherige Fahrten als Pilot, Fahrten gesamt, Landungen sowie die Zeiten als Pilot und als Mitfahrer. Diese Werte werden auf alle laufenden Nummern und Summen <b>aufaddiert</b> — so passt die Zählung nahtlos zu deinem bisherigen Buch. Die Startwerte gelten <b>je Pilot</b>.</p>
+    <h3>Die Tabelle</h3>
+    <p>Links stehen die laufenden Nummern (<b>Nr Pilot</b> und <b>Nr gesamt</b>), in der Mitte die Fahrtdaten. Die drei <b>blauen Spalten rechts</b> sind die fortlaufenden Summen — Landungen, Zeit als Pilot und Zeit als Mitfahrer. Genau diese Werte kannst du in dein Papier-Fahrtenbuch übertragen.</p>
+    <p>Über <b>„+ Neuer Eintrag"</b> erfasst du auch Fahrten, die nicht über die App liefen. Mit <b>CSV export</b> bekommst du die gefilterte Liste als Datei.</p>
+    <div class="hint"><b>Tipp:</b> Filtere oben auf deinen Namen — dann siehst du nur deine Fahrten, und die Summen beziehen sich sauber auf dich.</div>
   </div>
 
   <!-- 9 Passagier -->

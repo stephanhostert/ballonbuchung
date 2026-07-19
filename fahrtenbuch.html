@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  FAHRTENBUCH · STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Laufende Nummern + Summen werden hier berechnet (Offset je Pilot + kumuliert).
+  Zeiten in UTC. (c) Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Fahrtenbuch · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .hidden{display:none!important;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:1500px;margin:0 auto;padding:13px max(18px,env(safe-area-inset-left));display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .wordmark{display:flex;align-items:center;gap:11px;}
+  .wm-logo{width:38px;height:38px;flex:none;border-radius:7px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:.98rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.58rem;letter-spacing:.34em;color:#b6b6a6;margin-top:3px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:.8rem;color:#b7b09f;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
+  .topbar-right a{color:#cfc9bb;text-decoration:none;border-bottom:1px solid #44413a;}
+  .topbar-right a:hover{color:#fff;border-color:var(--brand);}
+  .topbar-right button{background:none;border:1px solid #44413a;color:#cfc9bb;border-radius:6px;padding:6px 11px;cursor:pointer;font-size:.78rem;}
+  .wrap{max-width:1500px;margin:0 auto;padding:26px max(18px,env(safe-area-inset-left)) 60px;}
+  .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .kicker{font-weight:700;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+  .kicker::before{content:"";width:24px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:-.015em;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:20px;box-shadow:var(--shadow);}
+  .card + .card{margin-top:16px;}
+  .card-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;margin-bottom:15px;border-bottom:1px solid var(--line-soft);}
+  .card-head .bar{width:4px;height:18px;background:var(--brand);border-radius:1px;}
+  .card-title{font-weight:700;font-size:1.02rem;}
+  .card-title small{display:block;font-weight:400;font-size:.78rem;color:var(--ink-faint);margin-top:2px;}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:4px;}
+  .toolbar label{font-size:.78rem;font-weight:600;color:var(--ink-soft);}
+  select,input[type=text],input[type=date],input[type=time],input[type=number],textarea{
+    font-family:var(--sans);font-size:15px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:6px;padding:8px 10px;}
+  select:focus,input:focus,textarea:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.18);}
+  textarea{width:100%;min-height:60px;resize:vertical;}
+  button.cta{padding:10px 17px;font-size:.92rem;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:7px;cursor:pointer;}
+  button.cta:hover{background:var(--brand-dark);}
+  button.cta.ghost{background:#fff;color:var(--brand-dark);border:1px solid var(--line);}
+  button.cta.ghost:hover{border-color:var(--brand);background:#fff;}
+  button.cta.small{padding:7px 12px;font-size:.8rem;}
+  .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;}
+  .field label{display:block;font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--brand-dark);font-weight:700;margin-bottom:6px;}
+  .field input,.field select{width:100%;}
+  .field.full{grid-column:1 / -1;}
+  .hint{font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0;}
+  .roleswitch{display:flex;gap:0;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+  .roleswitch button{flex:1;padding:9px 10px;font-size:.85rem;font-weight:700;background:var(--surface-2);border:none;color:var(--ink-soft);cursor:pointer;}
+  .roleswitch button.on{background:var(--brand);color:#fff;}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;}
+  table{border-collapse:collapse;width:100%;font-size:.82rem;white-space:nowrap;}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line-soft);text-align:left;}
+  th{background:var(--surface-2);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;position:sticky;top:0;}
+  td.num,th.num{text-align:right;font-family:var(--mono);}
+  tr:hover td{background:#fbf9f4;}
+  .sumcol{background:var(--brand-soft);}
+  th.sumcol{background:#cbe7f6;color:var(--brand-dark);}
+  .badge{font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;}
+  .badge.draft{color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6;}
+  .badge.mit{color:var(--brand-dark);background:var(--brand-soft);border:1px solid #b9def0;}
+  .iconbtn{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--ink-soft);font-size:.75rem;}
+  .iconbtn:hover{border-color:var(--brand);color:var(--brand-dark);}
+  .iconbtn.del:hover{border-color:var(--neg);color:var(--neg);}
+  .msg{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:7px;margin-top:14px;font-weight:600;font-size:.87rem;}
+  .msg.ok{background:var(--pos-soft);border:1px solid #c4dcc1;color:var(--pos);}
+  .msg.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
+  .msg.hide{display:none;}
+  .empty{padding:26px;text-align:center;color:var(--ink-faint);font-size:.88rem;}
+  footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.76rem;}
+  footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
+  @media(max-width:640px){.wrap{padding:18px 12px 44px;}.card{padding:15px;}}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="wordmark">
+      <img class="wm-logo" alt="Steffen Holzbau" src="data:image/png;base64,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">
+      <div><div class="wm-name">STEFFEN <span>HOLZBAU</span></div><div class="wm-tag">BALLONTEAM</div></div>
+    </div>
+    <div class="topbar-right">
+      <a href="admin.html" id="lnkAdmin" class="hidden">Fahrtplanung</a>
+      <a href="kontakte.html" id="lnkKont" class="hidden">Kontakte</a>
+      <a href="statistik.html" id="lnkStat" class="hidden">Statistik</a>
+      <a href="anleitung.html" target="_blank" rel="noopener" id="lnkHelp" class="hidden">Hilfe</a>
+      <span id="whoami"></span>
+      <button id="logoutBtn" class="hidden">Abmelden</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div class="card" style="max-width:420px;margin:40px auto">
+    <div class="card-head"><span class="bar"></span><span class="card-title">Anmelden</span></div>
+    <div class="field" style="margin-bottom:13px"><label>E-Mail</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field" style="margin-bottom:13px"><label>Passwort</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <div id="loginMsg" class="msg bad hide"></div>
+    <button class="cta" id="loginBtn" style="width:100%">Anmelden</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+
+  <div class="hero">
+    <div><div class="kicker">Ballonteam · Nachweis</div><h1>Fahrtenbuch</h1></div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="cta" id="newBtn">+ Neuer Eintrag</button>
+      <button class="cta ghost" id="csvBtn">CSV export</button>
+    </div>
+  </div>
+
+  <!-- Filter + Offsets -->
+  <div class="card">
+    <div class="card-head"><span class="bar"></span><span class="card-title">Pilot &amp; Startwerte<small>Die Startwerte aus deinem Papier-Fahrtenbuch werden auf die laufenden Nummern und Summen aufaddiert.</small></span></div>
+    <div class="toolbar">
+      <label for="fltPilot">Pilot:</label>
+      <select id="fltPilot"><option value="">alle Piloten</option></select>
+      <span style="font-size:.8rem;color:var(--ink-faint)"><b id="rowCount">0</b> Einträge</span>
+    </div>
+    <div id="offBox" class="hidden" style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)">
+      <div class="formgrid">
+        <div class="field"><label>Fahrten als Pilot <span class="hint">vorher</span></label><input type="number" id="oFP" value="0" min="0"></div>
+        <div class="field"><label>Fahrten gesamt <span class="hint">vorher</span></label><input type="number" id="oFG" value="0" min="0"></div>
+        <div class="field"><label>Landungen <span class="hint">vorher</span></label><input type="number" id="oLD" value="0" min="0"></div>
+        <div class="field"><label>Zeit als Pilot <span class="hint">h:mm</span></label><input type="text" id="oZP" placeholder="0:00"></div>
+        <div class="field"><label>Zeit als Mitfahrer <span class="hint">h:mm</span></label><input type="text" id="oZM" placeholder="0:00"></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="cta small" id="offSaveBtn" style="width:100%">Startwerte speichern</button></div>
+      </div>
+      <div id="offMsg" class="msg ok hide"></div>
+    </div>
+  </div>
+
+  <!-- Formular -->
+  <div class="card hidden" id="editCard">
+    <div class="card-head"><span class="bar"></span><span class="card-title" id="editTitle">Neuer Eintrag</span></div>
+    <input type="hidden" id="fId">
+    <div class="formgrid">
+      <div class="field"><label>Pilot</label><input type="text" id="fPilot" list="pilotList" autocomplete="off"><datalist id="pilotList"></datalist></div>
+      <div class="field"><label>Rolle</label>
+        <div class="roleswitch"><button type="button" id="roleP" class="on">Pilot</button><button type="button" id="roleM">Mitfahrer</button></div>
+      </div>
+      <div class="field"><label>Datum</label><input type="date" id="fDatum"></div>
+      <div class="field"><label>Ballon-Kennung</label><input type="text" id="fKennung" list="kennungList" placeholder="z. B. LX-BSH" autocomplete="off"><datalist id="kennungList"></datalist></div>
+      <div class="field"><label>Startort</label><input type="text" id="fStartort" list="ortList" autocomplete="off"><datalist id="ortList"></datalist></div>
+      <div class="field"><label>Startzeit <span class="hint">UTC</span></label><input type="time" id="fStartzeit"></div>
+      <div class="field"><label>Landeort</label><input type="text" id="fLandeort" list="ortList" autocomplete="off"></div>
+      <div class="field"><label>Landezeit <span class="hint">UTC</span></label><input type="time" id="fLandezeit"></div>
+      <div class="field"><label>Landungen</label><input type="number" id="fLandungen" value="1" min="0"></div>
+      <div class="field"><label>Gasverbrauch <span class="hint">Liter</span></label><input type="number" id="fGas" min="0" step="1" placeholder="z. B. 120"></div>
+      <div class="field"><label>Fahrzeit <span class="hint">berechnet</span></label><input type="text" id="fDauer" readonly style="background:#efe8d8"></div>
+      <div class="field"><label>Verbrauch <span class="hint">berechnet</span></label><input type="text" id="fLh" readonly style="background:#efe8d8"></div>
+      <div class="field full"><label>Bemerkung</label><textarea id="fBem"></textarea></div>
+    </div>
+    <div id="editMsg" class="msg bad hide"></div>
+    <div style="display:flex;gap:9px;margin-top:16px;flex-wrap:wrap">
+      <button class="cta" id="saveBtn">Speichern</button>
+      <button class="cta ghost" id="cancelBtn">Abbrechen</button>
+    </div>
+  </div>
+
+  <!-- Tabelle -->
+  <div class="card">
+    <div class="card-head"><span class="bar"></span><span class="card-title">Eintr&auml;ge<small>Sortiert nach Datum. Die blauen Spalten rechts sind die laufenden Summen für dein Papier-Fahrtenbuch.</small></span></div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead><tr>
+          <th class="num">Nr&nbsp;Pilot</th><th class="num">Nr&nbsp;ges.</th><th>Datum</th><th>Kennung</th><th>Rolle</th>
+          <th>Startort</th><th>Start&nbsp;UTC</th><th>Landeort</th><th>Lande&nbsp;UTC</th>
+          <th class="num">Ldg</th><th class="num">Zeit&nbsp;Pilot</th><th class="num">Zeit&nbsp;Mitf.</th>
+          <th class="num">Gas&nbsp;l</th><th class="num">l/h</th><th>Bemerkung</th>
+          <th class="num sumcol">&Sigma;&nbsp;Ldg</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Pilot</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Mitf.</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="19" class="empty">L&auml;dt&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Fahrtenbuch · Zeiten in UTC</footer>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_R7dJv2fCtG8ud3dDCaeqUQ_9BfG52EI";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id)=>document.getElementById(id);
+
+let rows = [];        // alle Fahrtenbuch-Eintraege
+let offsets = {};     // pilot -> offset-Objekt
+let rolle = "pilot";
+const NAV = ["logoutBtn","lnkAdmin","lnkKont","lnkStat","lnkHelp"];
+
+// ---- Hilfsfunktionen ----
+function toMin(t){ if(!t) return null; const p=String(t).split(":"); return (parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0); }
+function hm(min){ if(min===null||min===undefined||isNaN(min)) return ""; const s=min<0?"-":""; min=Math.abs(min); return s+Math.floor(min/60)+":"+String(min%60).padStart(2,"0"); }
+function parseHm(s){ if(!s) return 0; const p=String(s).replace(",",":").split(":"); const h=parseInt(p[0],10)||0; const m=parseInt(p[1],10)||0; return h*60+m; }
+function dauerMin(r){
+  const a=toMin(r.startzeit), b=toMin(r.landezeit);
+  if(a===null||b===null) return null;
+  return (b-a+1440)%1440;
+}
+function fmtD(d){ if(!d) return ""; const p=String(d).split("-"); return p[2]+"."+p[1]+"."+p[0]; }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function t5(t){ return t? String(t).slice(0,5):""; }
+
+// ---- Auth ----
+async function initAuth(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) showApp(session.user); else showLogin();
+}
+function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); NAV.forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); NAV.forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadAll(); }
+$("loginBtn").addEventListener("click", async ()=>{
+  $("loginMsg").classList.add("hide");
+  const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
+  if(error){ $("loginMsg").textContent="E-Mail oder Passwort ist falsch."; $("loginMsg").classList.remove("hide"); return; }
+  showApp(data.user);
+});
+$("pass").addEventListener("keydown",(e)=>{ if(e.key==="Enter") $("loginBtn").click(); });
+$("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); showLogin(); });
+
+// ---- Laden ----
+async function loadAll(){
+  const { data, error } = await sb.from("fahrtenbuch").select("*");
+  if(error){ $("tbody").innerHTML='<tr><td colspan="19" class="empty">Fehler: '+esc(error.message)+'</td></tr>'; return; }
+  rows = data||[];
+  rows.sort((a,b)=>{
+    if(a.datum!==b.datum) return a.datum<b.datum?-1:1;
+    const x=toMin(a.startzeit), y=toMin(b.startzeit);
+    if(x!==y) return (x===null?99999:x)-(y===null?99999:y);
+    return (a.created_at||"")<(b.created_at||"")?-1:1;
+  });
+  const { data:off } = await sb.from("fahrtenbuch_offset").select("*");
+  offsets={}; (off||[]).forEach(o=>{ offsets[o.pilot]=o; });
+  // Piloten aus Eintraegen + geplanten Fahrten
+  const set=new Set(rows.map(r=>r.pilot).filter(Boolean));
+  const { data:f } = await sb.from("fahrten").select("pilot_name");
+  (f||[]).forEach(x=>{ if(x.pilot_name) set.add(x.pilot_name); });
+  const piloten=[...set].sort((a,b)=>a.localeCompare(b,"de"));
+  const cur=$("fltPilot").value;
+  $("fltPilot").innerHTML='<option value="">alle Piloten</option>'+piloten.map(p=>'<option>'+esc(p)+'</option>').join("");
+  $("fltPilot").value=cur;
+  $("pilotList").innerHTML=piloten.map(p=>'<option value="'+esc(p)+'">').join("");
+  const kenn=[...new Set(rows.map(r=>r.kennung).filter(Boolean))].sort();
+  $("kennungList").innerHTML=kenn.map(k=>'<option value="'+esc(k)+'">').join("");
+  const orte=[...new Set(rows.flatMap(r=>[r.startort,r.landeort]).filter(Boolean))].sort();
+  $("ortList").innerHTML=orte.map(o=>'<option value="'+esc(o)+'">').join("");
+  renderOffsets();
+  render();
+}
+
+// ---- Berechnung laufender Werte ----
+function computed(){
+  const run={};   // pilot -> laufende Werte
+  return rows.map(r=>{
+    const p=r.pilot||"";
+    if(!run[p]){
+      const o=offsets[p]||{};
+      run[p]={ fp:(o.fahrten_pilot||0), fg:(o.fahrten_gesamt||0), ld:(o.landungen||0),
+               mp:(o.minuten_pilot||0), mm:(o.minuten_mitfahrer||0) };
+    }
+    const d=dauerMin(r);
+    const istPilot = r.rolle!=="mitfahrer";
+    run[p].fg += 1;
+    if(istPilot) run[p].fp += 1;
+    run[p].ld += (r.landungen||0);
+    if(d!==null){ if(istPilot) run[p].mp += d; else run[p].mm += d; }
+    return { r, d, istPilot,
+      nrPilot: istPilot? run[p].fp : null,
+      nrGes: run[p].fg,
+      sumLd: run[p].ld, sumMp: run[p].mp, sumMm: run[p].mm };
+  });
+}
+
+function render(){
+  const filt=$("fltPilot").value;
+  const all=computed();
+  const list=all.filter(x=>!filt || x.r.pilot===filt);
+  $("rowCount").textContent=list.length;
+  const tb=$("tbody");
+  if(!list.length){ tb.innerHTML='<tr><td colspan="19" class="empty">Noch keine Eintr&auml;ge.</td></tr>'; return; }
+  tb.innerHTML = list.map(x=>{
+    const r=x.r;
+    const unvoll = !r.startzeit || !r.landezeit;
+    const lh = (r.gas_liter && x.d) ? (r.gas_liter/(x.d/60)).toFixed(1) : "";
+    return '<tr>'+
+      '<td class="num">'+(x.nrPilot!==null?x.nrPilot:"&ndash;")+'</td>'+
+      '<td class="num">'+x.nrGes+'</td>'+
+      '<td>'+fmtD(r.datum)+(unvoll?' <span class="badge draft">unvollst&auml;ndig</span>':'')+'</td>'+
+      '<td>'+esc(r.kennung)+'</td>'+
+      '<td>'+(x.istPilot?'Pilot':'<span class="badge mit">Mitfahrer</span>')+'</td>'+
+      '<td>'+esc(r.startort)+'</td>'+
+      '<td class="num">'+t5(r.startzeit)+'</td>'+
+      '<td>'+esc(r.landeort)+'</td>'+
+      '<td class="num">'+t5(r.landezeit)+'</td>'+
+      '<td class="num">'+(r.landungen==null?"":r.landungen)+'</td>'+
+      '<td class="num">'+(x.istPilot?hm(x.d):"")+'</td>'+
+      '<td class="num">'+(!x.istPilot?hm(x.d):"")+'</td>'+
+      '<td class="num">'+(r.gas_liter==null?"":r.gas_liter)+'</td>'+
+      '<td class="num">'+lh+'</td>'+
+      '<td>'+esc(r.bemerkung)+'</td>'+
+      '<td class="num sumcol">'+x.sumLd+'</td>'+
+      '<td class="num sumcol">'+hm(x.sumMp)+'</td>'+
+      '<td class="num sumcol">'+hm(x.sumMm)+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="iconbtn" data-edit="'+r.id+'">Bearb.</button> '+
+        '<button class="iconbtn del" data-del="'+r.id+'">L&ouml;schen</button></td>'+
+    '</tr>';
+  }).join("");
+  tb.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openForm(rows.find(r=>r.id===b.dataset.edit))));
+  tb.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delRow(rows.find(r=>r.id===b.dataset.del))));
+}
+$("fltPilot").addEventListener("change",()=>{ renderOffsets(); render(); });
+
+// ---- Offsets ----
+function renderOffsets(){
+  const p=$("fltPilot").value;
+  if(!p){ $("offBox").classList.add("hidden"); return; }
+  $("offBox").classList.remove("hidden");
+  const o=offsets[p]||{};
+  $("oFP").value=o.fahrten_pilot||0;
+  $("oFG").value=o.fahrten_gesamt||0;
+  $("oLD").value=o.landungen||0;
+  $("oZP").value=hm(o.minuten_pilot||0);
+  $("oZM").value=hm(o.minuten_mitfahrer||0);
+  $("offMsg").classList.add("hide");
+}
+$("offSaveBtn").addEventListener("click", async ()=>{
+  const p=$("fltPilot").value; if(!p) return;
+  const rec={ pilot:p,
+    fahrten_pilot:parseInt($("oFP").value,10)||0,
+    fahrten_gesamt:parseInt($("oFG").value,10)||0,
+    landungen:parseInt($("oLD").value,10)||0,
+    minuten_pilot:parseHm($("oZP").value),
+    minuten_mitfahrer:parseHm($("oZM").value) };
+  const { error } = await sb.from("fahrtenbuch_offset").upsert(rec,{ onConflict:"pilot" });
+  const m=$("offMsg");
+  if(error){ m.textContent="Fehler: "+error.message; m.className="msg bad"; return; }
+  offsets[p]=rec;
+  m.textContent="Startwerte gespeichert."; m.className="msg ok";
+  render();
+});
+
+// ---- Formular ----
+function setRolle(r){ rolle=r; $("roleP").classList.toggle("on",r==="pilot"); $("roleM").classList.toggle("on",r==="mitfahrer"); }
+$("roleP").addEventListener("click",()=>setRolle("pilot"));
+$("roleM").addEventListener("click",()=>setRolle("mitfahrer"));
+
+function recalc(){
+  const a=toMin($("fStartzeit").value), b=toMin($("fLandezeit").value);
+  let d=null;
+  if(a!==null && b!==null) d=(b-a+1440)%1440;
+  $("fDauer").value = d===null? "" : hm(d);
+  const gas=parseFloat($("fGas").value);
+  $("fLh").value = (d && gas) ? (gas/(d/60)).toFixed(1)+" l/h" : "";
+}
+["fStartzeit","fLandezeit","fGas"].forEach(id=>$(id).addEventListener("input",recalc));
+
+function openForm(r){
+  $("editMsg").classList.add("hide");
+  $("editTitle").textContent = r? "Eintrag bearbeiten" : "Neuer Eintrag";
+  $("fId").value = r? r.id : "";
+  $("fPilot").value = r? (r.pilot||"") : ($("fltPilot").value||"");
+  setRolle(r && r.rolle==="mitfahrer" ? "mitfahrer" : "pilot");
+  $("fDatum").value = r? (r.datum||"") : new Date().toISOString().slice(0,10);
+  $("fKennung").value = r? (r.kennung||"") : (rows.length? (rows[rows.length-1].kennung||"") : "");
+  $("fStartort").value = r? (r.startort||"") : "";
+  $("fStartzeit").value = r? t5(r.startzeit) : "";
+  $("fLandeort").value = r? (r.landeort||"") : "";
+  $("fLandezeit").value = r? t5(r.landezeit) : "";
+  $("fLandungen").value = r? (r.landungen==null?1:r.landungen) : 1;
+  $("fGas").value = r && r.gas_liter!=null ? r.gas_liter : "";
+  $("fBem").value = r? (r.bemerkung||"") : "";
+  recalc();
+  $("editCard").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+$("newBtn").addEventListener("click",()=>openForm(null));
+$("cancelBtn").addEventListener("click",()=>$("editCard").classList.add("hidden"));
+
+$("saveBtn").addEventListener("click", async ()=>{
+  const pilot=$("fPilot").value.trim();
+  const datum=$("fDatum").value;
+  if(!pilot){ formErr("Bitte einen Piloten eintragen."); return; }
+  if(!datum){ formErr("Bitte ein Datum eintragen."); return; }
+  const rec={
+    pilot, rolle,
+    datum,
+    kennung:$("fKennung").value.trim()||null,
+    startort:$("fStartort").value.trim()||null,
+    startzeit:$("fStartzeit").value||null,
+    landeort:$("fLandeort").value.trim()||null,
+    landezeit:$("fLandezeit").value||null,
+    landungen:parseInt($("fLandungen").value,10)||0,
+    gas_liter:$("fGas").value===""?null:parseFloat($("fGas").value),
+    bemerkung:$("fBem").value.trim()||null
+  };
+  const id=$("fId").value;
+  let error;
+  if(id){ ({ error } = await sb.from("fahrtenbuch").update(rec).eq("id",id)); }
+  else  { ({ error } = await sb.from("fahrtenbuch").insert(rec)); }
+  if(error){ formErr("Fehler: "+error.message); return; }
+  $("editCard").classList.add("hidden");
+  await loadAll();
+});
+function formErr(t){ $("editMsg").textContent=t; $("editMsg").className="msg bad"; }
+
+async function delRow(r){
+  if(!r) return;
+  if(!confirm("Eintrag vom "+fmtD(r.datum)+" wirklich loeschen?")) return;
+  const { error } = await sb.from("fahrtenbuch").delete().eq("id",r.id);
+  if(error){ alert("Loeschen fehlgeschlagen: "+error.message); return; }
+  await loadAll();
+}
+
+// ---- CSV ----
+$("csvBtn").addEventListener("click",()=>{
+  const filt=$("fltPilot").value;
+  const list=computed().filter(x=>!filt||x.r.pilot===filt);
+  const head=["Nr Pilot","Nr gesamt","Pilot","Datum","Kennung","Rolle","Startort","Start UTC","Landeort","Lande UTC","Landungen","Zeit Pilot","Zeit Mitfahrer","Gas l","l/h","Bemerkung","Summe Landungen","Summe Zeit Pilot","Summe Zeit Mitfahrer"];
+  const lines=[head.join(";")];
+  list.forEach(x=>{
+    const r=x.r;
+    const lh=(r.gas_liter && x.d)?(r.gas_liter/(x.d/60)).toFixed(1):"";
+    lines.push([
+      x.nrPilot!==null?x.nrPilot:"", x.nrGes, r.pilot||"", fmtD(r.datum), r.kennung||"",
+      x.istPilot?"Pilot":"Mitfahrer", r.startort||"", t5(r.startzeit), r.landeort||"", t5(r.landezeit),
+      r.landungen==null?"":r.landungen, x.istPilot?hm(x.d):"", !x.istPilot?hm(x.d):"",
+      r.gas_liter==null?"":r.gas_liter, lh, (r.bemerkung||"").replace(/[;\n\r]/g," "),
+      x.sumLd, hm(x.sumMp), hm(x.sumMm)
+    ].join(";"));
+  });
+  const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="fahrtenbuch"+(filt?"-"+filt.replace(/\s+/g,"_"):"")+".csv";
+  a.click();
+});
+
+initAuth();
+</script>
+</body>
+</html>
