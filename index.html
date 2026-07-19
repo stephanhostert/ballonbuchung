@@ -101,6 +101,8 @@
   .result.bye .ic{background:var(--wood);}
   .unsublink{display:inline-block;margin-top:8px;color:var(--ink-faint);text-decoration:underline;cursor:pointer;font-size:.76rem;}
   .unsublink:hover{color:var(--neg);}
+  .optbox,.haftbox{display:flex;gap:11px;align-items:flex-start;margin-top:14px;padding:13px 14px;background:var(--brand-soft,#eaf6fc);border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:.86rem;line-height:1.4;color:var(--ink-soft);}
+  .optbox input,.haftbox input{margin-top:2px;width:18px;height:18px;flex:0 0 auto;accent-color:var(--brand);cursor:pointer;}
   .screen{display:none;}
   .screen.show{display:block;}
   .result{text-align:center;padding:14px 6px 6px;}
@@ -193,6 +195,8 @@
       <div class="note" id="paxNote">Wähle die Personenzahl.</div>
       <div class="paxblock" id="weights"></div>
       <div class="sum-row"><span class="lbl">Gesamtgewicht deiner Anmeldung</span><span><span id="sumKg">0</span> kg</span></div>
+      <label class="haftbox"><input type="checkbox" id="haft">
+        <span>Mir ist bewusst, dass eine Ballonfahrt ein Outdoor-Erlebnis mit den allgemeinen Risiken der Luftfahrt ist. Ich nehme freiwillig und auf eigenes Risiko teil, bin gesundheitlich dazu in der Lage und folge den Anweisungen des Piloten.</span></label>
       <div id="errBox" class="status bad hide"><span class="ico">!</span><span id="errTxt"></span></div>
       <button class="cta" id="submitBtn">Verbindlich anmelden</button>
       <a class="declinelink" id="declineBtn"><span>Ich kann bei diesem Termin nicht — absagen</span></a>
@@ -243,6 +247,38 @@
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
 
+  <!-- Begrüßung / Opt-in -->
+  <div id="screen-welcome" class="screen">
+    <div class="hero">
+      <div class="kicker">Ballonteam · Willkommen</div>
+      <h1>Unsere Passagierliste ist jetzt digital</h1>
+      <div class="sub">Hallo <b id="optName">…</b>, schön, dass du dabei bist! 🎈</div>
+    </div>
+    <div class="card">
+      <p style="color:var(--ink-soft);margin:0 0 12px">
+        Ab sofort organisieren wir kurzfristige Ballonfahrten digital. Sobald das Wetter passt und ein Termin ansteht,
+        bekommst du eine <b>SMS mit einem persönlichen Anmeldelink</b>. Die Plätze sind begrenzt:
+        <b>wer zuerst kommt, fährt.</b> Du meldest dich nur an, wenn du Zeit und Lust hast – zu nichts verpflichtet.
+      </p>
+      <label class="optbox"><input type="checkbox" id="optIn">
+        <span>Ja, das Ballonteam darf mich künftig per SMS über kurzfristige Ballonfahrten informieren.</span></label>
+      <div class="note" id="optHint">Ohne Haken bekommst du keine Einladungen mehr.</div>
+      <div id="optErr" class="status bad hide"><span class="ico">!</span><span>Konnte nicht gespeichert werden – bitte nochmal.</span></div>
+      <button class="cta" id="optSaveBtn">Speichern</button>
+    </div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“</footer>
+  </div>
+
+  <!-- Opt-in gespeichert -->
+  <div id="screen-optok" class="screen">
+    <div class="card"><div class="result ok">
+      <div class="ic">&#10003;</div>
+      <h2 id="optOkTitle">Gespeichert</h2>
+      <p id="optOkText">–</p>
+    </div></div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
+  </div>
+
   <!-- Generell abgemeldet -->
   <div id="screen-unsub" class="screen">
     <div class="card"><div class="result bye">
@@ -270,7 +306,7 @@ const FAHRT = params.get("f");
 let info = null, pick = 1;
 
 function show(id){
-  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub"].forEach(s=>{
+  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub","screen-welcome","screen-optok"].forEach(s=>{
     $(s).classList.toggle("show", s===id);
   });
   window.scrollTo(0,0);
@@ -284,7 +320,38 @@ function fmtDateShort(d){
   return dt.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"});
 }
 
+async function loadWelcome(){
+  if(!TOKEN){ show("screen-info"); return; }
+  const { data, error } = await sb.rpc("willkommen_info", { p_token: TOKEN });
+  if(error || !data || !data.ok){
+    $("infoText").textContent = "Dieser Link ist ungültig oder abgelaufen.";
+    show("screen-info"); return;
+  }
+  $("optName").textContent = data.vorname || "";
+  $("optIn").checked = !!data.consent;
+  $("optHint").textContent = data.consent
+    ? "Du bist bereits angemeldet – du kannst deine Auswahl hier jederzeit ändern."
+    : "Ohne Haken bekommst du keine Einladungen.";
+  show("screen-welcome");
+}
+async function optSave(){
+  const btn=$("optSaveBtn"); const wert=$("optIn").checked;
+  $("optErr").classList.add("hide"); btn.disabled=true; btn.textContent="Speichert…";
+  const { data, error } = await sb.rpc("consent_setzen", { p_token:TOKEN, p_wert:wert });
+  btn.disabled=false; btn.textContent="Speichern";
+  if(error || !data || !data.ok){ $("optErr").classList.remove("hide"); return; }
+  if(wert){
+    $("optOkTitle").textContent = "Perfekt, du bist dabei! 🎈";
+    $("optOkText").textContent  = "Wir informieren dich per SMS, sobald eine kurzfristige Ballonfahrt ansteht.";
+  } else {
+    $("optOkTitle").textContent = "Alles klar";
+    $("optOkText").textContent  = "Du bekommst vorerst keine Fahrt-Einladungen. Du kannst es jederzeit über den Link ändern.";
+  }
+  show("screen-optok");
+}
+
 async function load(){
+  if(params.get("willkommen")){ return loadWelcome(); }
   if(!TOKEN || !FAHRT){ show("screen-info"); return; }
   const { data, error } = await sb.rpc("anmeldung_info", { p_token: TOKEN, p_fahrt: FAHRT });
   if(error){ $("infoText").textContent = "Der Termin konnte nicht geladen werden. Bitte später erneut versuchen."; show("screen-info"); return; }
@@ -365,6 +432,7 @@ async function submit(){
   const btn=$("submitBtn");
   const r=sumWeights();
   if(!r.complete){ showErr("Bitte für alle "+pick+" Personen ein Gewicht eintragen."); return; }
+  if(!$("haft").checked){ showErr("Bitte den Hinweis zur Teilnahme bestätigen."); return; }
   btn.disabled=true; btn.textContent="Wird angemeldet…";
   const { data, error } = await sb.rpc("anmelden", { p_token:TOKEN, p_fahrt:FAHRT, p_personen:pick, p_gewicht:r.sum });
   btn.disabled=false; btn.textContent="Verbindlich anmelden";
@@ -410,6 +478,7 @@ $("personSel").addEventListener("change", buildWeights);
 $("submitBtn").addEventListener("click", submit);
 $("declineBtn").addEventListener("click", decline);
 $("unsubBtn").addEventListener("click", unsubscribe);
+$("optSaveBtn").addEventListener("click", optSave);
 load();
 </script>
 </body>

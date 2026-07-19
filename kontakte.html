@@ -81,6 +81,15 @@
   .filterbar .lbl{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-right:2px;}
   .fchip{font-size:.74rem;font-weight:600;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;cursor:pointer;}
   .fchip.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .sendbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:8px;}
+  .sendbar .selall{display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .sendbar .selall input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
+  .sendbar .spacer{flex:1;}
+  button.cta.small{padding:8px 14px;font-size:.82rem;border-radius:7px;}
+  button.cta.small:disabled{background:var(--line);color:var(--ink-faint);cursor:not-allowed;}
+  .selchk{width:17px;height:17px;flex:none;accent-color:var(--brand);cursor:pointer;}
+  .badge.wait{color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6;}
+  .badge.none{color:var(--ink-faint);background:var(--surface-2);border:1px solid var(--line);}
   /* Liste */
   .clist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .crow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-soft);background:var(--surface);}
@@ -167,7 +176,7 @@
       <div class="field"><label>Personen <span class="hint">(Plätze lt. Gutschein)</span></label><div class="input-row"><input type="number" id="fPersonen" value="1" min="1" max="8"><span style="display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:.8rem;color:var(--ink-faint);background:#efe8d8;border:1px solid var(--line);border-left:none;border-radius:0 6px 6px 0">Pers.</span></div></div>
       <div class="field"><label>Priorität</label>
         <select id="fPrio"><option value="1">1 – VIP / bevorzugt</option><option value="2">2 – normal</option><option value="3" selected>3 – niedrig</option></select></div>
-      <div class="field full"><label>Flags <span class="hint">(Enter oder Komma zum Hinzufügen – mehrere möglich)</span></label>
+      <div class="field full"><label>Kategorien <span class="hint">(Enter oder Komma zum Hinzufügen – mehrere möglich)</span></label>
         <div class="flagbox" id="flagBox">
           <input type="text" id="flagInput" list="flagList" placeholder="z. B. Sommer, kurzfristig, NW-tauglich …">
         </div>
@@ -192,6 +201,13 @@
       <span class="count"><b id="cCount">0</b> Kontakte</span>
     </div>
     <div class="filterbar" id="filterbar"></div>
+    <div class="sendbar">
+      <label class="selall"><input type="checkbox" id="selAll"><span>sichtbare wählen</span></label>
+      <button class="fchip" id="fltNoOpt" title="Nur Kontakte ohne erteiltes Opt-in zeigen">nur ohne Opt-in</button>
+      <span class="spacer"></span>
+      <button class="cta small" id="welcomeBtn" disabled>Begrüßungs-SMS senden</button>
+    </div>
+    <div id="sendMsg" class="msg hide"></div>
     <div class="clist" id="clist"><div class="empty">Lädt…</div></div>
   </div>
 
@@ -210,6 +226,9 @@ let curFlags = [];          // Flags im offenen Formular
 let filterFlags = [];       // aktive Filter-Flags in der Liste
 let absagen = {};           // contact_id -> Anzahl Absagen
 let einladungen = {};       // contact_id -> Anzahl Einladungen
+let selected = new Set();    // ausgewählte Kontakte für Begrüßungs-SMS
+let onlyNoOpt = false;       // Filter: nur ohne erteiltes Opt-in
+let lastVisible = [];        // aktuell sichtbare Kontakt-IDs
 
 function normPhone(raw){
   if(!raw) return "";
@@ -279,22 +298,29 @@ function renderList(){
   const list = contacts.filter(c=>{
     const textOk = !q || [c.name,c.vorname,c.handy,c.ort,c.gutschein_nr,c.firma].filter(Boolean).join(" ").toLowerCase().includes(q);
     const flagsOk = filterFlags.every(f=>(c.flags||[]).includes(f));   // muss ALLE aktiven Filter-Flags haben
-    return textOk && flagsOk;
+    const optOk = !onlyNoOpt || !c.consent;                            // Filter „nur ohne Opt-in“
+    return textOk && flagsOk && optOk;
   });
+  lastVisible = list.map(c=>c.id);
   $("cCount").textContent = list.length;
-  if(!list.length){ box.innerHTML='<div class="empty">Keine Kontakte.</div>'; return; }
+  if(!list.length){ box.innerHTML='<div class="empty">Keine Kontakte.</div>'; updateSendUI(); return; }
   list.forEach(c=>{
-    const zeit = (c.wann_von||c.wann_bis)?(fmtD(c.wann_von)+"–"+fmtD(c.wann_bis)):"jederzeit";
+    const optBadge = c.consent
+      ? '<span class="badge ok">Opt-in ✓'+(c.consent_at?' '+fmtD(c.consent_at.slice(0,10)):'')+'</span>'
+      : (c.willkommen_gesendet_at
+          ? '<span class="badge wait">begrüßt – wartet</span>'
+          : '<span class="badge none">kein Opt-in</span>');
     const badges =
       (c.prioritaet===1?'<span class="badge vip">VIP</span>':'') +
       (c.abgemeldet?'<span class="badge off">abgemeldet</span>':'') +
-      (c.consent?'<span class="badge ok">SMS ok</span>':'<span class="badge no">keine Einwilligung</span>') +
+      optBadge +
       (einladungen[c.id]?'<span class="badge inv">'+einladungen[c.id]+'× eingeladen</span>':'') +
       (absagen[c.id]?'<span class="badge decl">'+absagen[c.id]+'× abgesagt</span>':'');
     const flagsHtml = (c.flags||[]).length ? '<div class="cflags">'+(c.flags||[]).map(f=>'<span class="flag-tag">'+f+'</span>').join("")+'</div>' : '';
     const row=document.createElement("div");
     row.className="crow"+(c.aktiv?"":" inact");
     row.innerHTML=
+      '<input type="checkbox" class="selchk" data-sel="'+c.id+'"'+(selected.has(c.id)?' checked':'')+' title="Für Begrüßungs-SMS wählen">'+
       '<div class="cmain">'+
         '<div class="cname">'+(c.name||"")+', '+(c.vorname||"")+' '+badges+'</div>'+
         '<div class="cmeta">'+(c.handy||"—")+' · '+(c.personen||1)+' Pl. · Wind '+(c.wind_wunsch||"egal")+(c.ort?(' · '+c.ort):'')+'</div>'+
@@ -308,7 +334,40 @@ function renderList(){
   });
   box.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openForm(contacts.find(x=>x.id===b.dataset.edit))));
   box.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delContact(contacts.find(x=>x.id===b.dataset.del))));
+  box.querySelectorAll("[data-sel]").forEach(cb=>cb.addEventListener("change",()=>{
+    if(cb.checked) selected.add(cb.dataset.sel); else selected.delete(cb.dataset.sel);
+    updateSendUI();
+  }));
+  updateSendUI();
 }
+function updateSendUI(){
+  const n=selected.size, btn=$("welcomeBtn");
+  btn.disabled = n===0;
+  btn.textContent = n ? ("Begrüßungs-SMS senden ("+n+")") : "Begrüßungs-SMS senden";
+  $("selAll").checked = lastVisible.length>0 && lastVisible.every(id=>selected.has(id));
+}
+function showSend(t,cls){ const m=$("sendMsg"); m.textContent=t; m.className="msg "+cls; }
+$("selAll").addEventListener("change",()=>{
+  if($("selAll").checked) lastVisible.forEach(id=>selected.add(id));
+  else lastVisible.forEach(id=>selected.delete(id));
+  renderList();
+});
+$("fltNoOpt").addEventListener("click",()=>{ onlyNoOpt=!onlyNoOpt; $("fltNoOpt").classList.toggle("on",onlyNoOpt); renderList(); });
+$("welcomeBtn").addEventListener("click", async ()=>{
+  const ids=[...selected];
+  if(!ids.length) return;
+  if(!confirm("Begrüßungs-SMS (Opt-in-Anfrage) an "+ids.length+" Kontakt(e) senden?")) return;
+  const btn=$("welcomeBtn"); btn.disabled=true; btn.textContent="Sendet…";
+  showSend("Sende…","ok");
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ mode:"welcome", contact_ids:ids } });
+  if(error){ showSend("Fehler beim Senden: "+error.message,"bad"); updateSendUI(); return; }
+  if(!data || !data.ok){ showSend("Fehler: "+((data&&data.error)||"unbekannt"),"bad"); updateSendUI(); return; }
+  const ok=(data.results||[]).filter(r=>r.ok).length;
+  const fail=(data.results||[]).length-ok;
+  showSend("Gesendet: "+ok+(fail?(" · fehlgeschlagen: "+fail):"")+".", fail?"bad":"ok");
+  selected.clear();
+  await loadContacts();
+});
 $("search").addEventListener("input", renderList);
 
 // ---- Flag-Eingabe im Formular ----
