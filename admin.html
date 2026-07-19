@@ -177,6 +177,7 @@
       <div class="field full"><label>Treffpunkt-Link <span class="hint">(Google Maps – in SMS &amp; Anmeldeseite)</span></label><input type="text" id="fMaps" placeholder="https://maps.google.com/?q=..."></div>
       <div class="field full"><label>Notiz <span class="hint">(intern)</span></label><input type="text" id="fNotiz"></div>
     </div>
+    <div id="wxPanel" style="display:none;margin-top:4px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:.85rem;color:var(--ink-soft)"></div>
     <button class="cta" id="createBtn">Termin anlegen</button>
     <div id="createMsg" class="msg ok hide"></div>
 
@@ -504,10 +505,11 @@ function startPoll(){ if(pollTimer) clearInterval(pollTimer); pollTimer=setInter
 
 function flash(id,kind,txt){ const e=$(id); e.className="msg "+kind; e.textContent=txt; e.classList.remove("hide"); }
 
-// ---- Windrichtung automatisch aus Wettervorhersage (Open-Meteo) ----
+// ---- Wetter automatisch aus Vorhersage (Open-Meteo) ----
 const geoCache = {};
 let windTimer = null;
 function degToDir(deg){ return DIRS[Math.round(deg/45)%8]; }
+function ortClean(s){ return (s||"").replace(/\([^)]*\)/g," ").replace(/\s+/g," ").trim(); }  // Klammern ignorieren
 async function geocode(ort){
   const key=ort.toLowerCase();
   if(key in geoCache) return geoCache[key];
@@ -516,28 +518,69 @@ async function geocode(ort){
   const hit=(j.results&&j.results[0])||null;
   geoCache[key]=hit; return hit;
 }
+function hhmm(iso){ return iso ? iso.slice(11,16) : "–"; }
+function addHours(iso, h){ const d=new Date(iso); d.setHours(d.getHours()+h); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function riskColor(l){ return l==="hoch"?"#bf3a2b":(l==="erhöht"||l==="mäßig"||l==="möglich")?"#9a6b00":"#3f7d4f"; }
+function wxRow(label,val,color){ return '<div style="display:flex;justify-content:space-between;gap:14px;padding:4px 0;border-bottom:1px solid var(--line-soft)"><span>'+label+'</span><b style="color:'+(color||"var(--ink)")+';font-family:var(--mono);font-weight:600;text-align:right">'+val+'</b></div>'; }
+
 async function autoWind(){
-  const ort=$("fOrt").value.trim(), datum=$("fDatum").value, zeit=$("fZeit").value||"06:00";
-  if(!ort || !datum) return;
-  $("windInfo").textContent="Wind wird geholt…";
+  const ortRaw=$("fOrt").value.trim(), datum=$("fDatum").value, zeit=$("fZeit").value||"06:00";
+  if(!ortRaw || !datum){ $("wxPanel").style.display="none"; return; }
+  $("windInfo").textContent="Wetter wird geholt…";
   try{
-    const g=await geocode(ort);
-    if(!g){ $("windInfo").textContent="Ort nicht gefunden – Wind bitte manuell wählen."; return; }
+    const g=await geocode(ortClean(ortRaw));
+    if(!g){ $("windInfo").textContent="Ort nicht gefunden – Wetter/Wind bitte manuell."; $("wxPanel").style.display="none"; return; }
     let hh=parseInt(zeit.slice(0,2),10)||6;
     if((parseInt(zeit.slice(3,5),10)||0)>=30) hh=(hh+1)%24;
     const u="https://api.open-meteo.com/v1/forecast?latitude="+g.latitude+"&longitude="+g.longitude+
-      "&hourly=winddirection_10m,windspeed_10m&timezone=auto&start_date="+datum+"&end_date="+datum;
+      "&hourly=winddirection_10m,windspeed_10m,windgusts_10m,cape,precipitation_probability,visibility,relativehumidity_2m,weathercode"+
+      "&daily=sunrise,sunset&timezone=auto&start_date="+datum+"&end_date="+datum;
     const r=await fetch(u); const j=await r.json();
-    const times=(j.hourly&&j.hourly.time)||[];
-    if(!times.length){ $("windInfo").textContent="Keine Vorhersage für diesen Tag (evtl. zu weit in der Zukunft)."; return; }
+    const H=j.hourly||{}, times=H.time||[];
+    if(!times.length){ $("windInfo").textContent="Keine Vorhersage für diesen Tag (evtl. zu weit in der Zukunft)."; $("wxPanel").style.display="none"; return; }
     const want=datum+"T"+String(hh).padStart(2,"0")+":00";
-    let idx=times.indexOf(want); if(idx<0) idx=0;
-    const deg=j.hourly.winddirection_10m[idx];
-    const spd=Math.round(j.hourly.windspeed_10m[idx]);
+    let i=times.indexOf(want); if(i<0) i=0;
+
+    const deg=H.winddirection_10m[i], spd=Math.round(H.windspeed_10m[i]);
+    const gust=Math.round((H.windgusts_10m||[])[i]||0);
+    const cape=Math.round((H.cape||[])[i]||0);
+    const pprob=Math.round((H.precipitation_probability||[])[i]||0);
+    const visKm=(((H.visibility||[])[i]||99999)/1000);
+    const rh=Math.round((H.relativehumidity_2m||[])[i]||0);
+    const code=(H.weathercode||[])[i];
     const dir=degToDir(deg);
     $("fWind").value=dir;
-    $("windInfo").textContent="Vorhersage für "+g.name+": Wind aus "+dir+" ("+Math.round(deg)+"°, "+spd+" km/h) – anpassbar.";
-  }catch(e){ $("windInfo").textContent="Wetterabruf nicht möglich – Wind bitte manuell wählen."; }
+
+    // Nebelrisiko
+    let nebel = "gering";
+    if(code===45||code===48||visKm<1) nebel="hoch";
+    else if(visKm<4) nebel="mäßig";
+    else if(rh>=95) nebel="möglich";
+    // Gewitterrisiko
+    let gew = "gering";
+    if(code===95||code===96||code===99) gew="hoch";
+    else if(cape>=1500||pprob>=70) gew="erhöht";
+    else if(cape>=800||pprob>=40) gew="mäßig";
+
+    // Sonne + Thermik (geschätzt: ca. Sonnenaufgang+2h bis Sonnenuntergang−2h)
+    const sr=(j.daily&&j.daily.sunrise&&j.daily.sunrise[0])||"";
+    const ss=(j.daily&&j.daily.sunset&&j.daily.sunset[0])||"";
+    const thermStart = sr? addHours(sr, 2) : "–";
+    const thermEnd   = ss? addHours(ss, -2) : "–";
+
+    $("windInfo").textContent="Wind aus "+dir+" gesetzt ("+Math.round(deg)+"°) – anpassbar.";
+    $("wxPanel").innerHTML =
+      '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter für '+g.name+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
+      wxRow("Wind", "aus "+dir+" ("+Math.round(deg)+"°)")+
+      wxRow("Bodenwind", spd+" km/h")+
+      wxRow("Böen", gust+" km/h", gust>=25?"#bf3a2b":(gust>=15?"#9a6b00":null))+
+      wxRow("Thermik (geschätzt)", thermStart+" – "+thermEnd)+
+      wxRow("Nebelrisiko", nebel+" (Sicht "+(visKm>=99?"&gt;99":visKm.toFixed(visKm<10?1:0))+" km, "+rh+"% rF)", riskColor(nebel))+
+      wxRow("Gewitterrisiko", gew+" (CAPE "+cape+", Regen "+pprob+"%)", riskColor(gew))+
+      wxRow("Sonnenaufgang", hhmm(sr))+
+      '<div style="display:flex;justify-content:space-between;gap:14px;padding:4px 0"><span>Sonnenuntergang</span><b style="font-family:var(--mono);font-weight:600">'+hhmm(ss)+'</b></div>';
+    $("wxPanel").style.display="block";
+  }catch(e){ $("windInfo").textContent="Wetterabruf nicht möglich – bitte manuell."; $("wxPanel").style.display="none"; }
 }
 function scheduleWind(){ clearTimeout(windTimer); windTimer=setTimeout(autoWind,600); }
 ["fOrt","fDatum","fZeit"].forEach(id=>{ $(id).addEventListener("change",scheduleWind); $(id).addEventListener("input",scheduleWind); });
