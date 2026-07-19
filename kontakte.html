@@ -205,6 +205,7 @@
     <div class="sendbar">
       <label class="selall"><input type="checkbox" id="selAll"><span>sichtbare wählen</span></label>
       <button class="fchip" id="fltNoOpt" title="Nur Kontakte ohne erteiltes Opt-in zeigen">nur ohne Opt-in</button>
+      <button class="fchip" id="fltInactive" title="Nur inaktive Kontakte zeigen">nur inaktive</button>
       <span class="spacer"></span>
       <button class="cta small" id="welcomeBtn" disabled>Begrüßungs-SMS senden</button>
     </div>
@@ -229,6 +230,7 @@ let absagen = {};           // contact_id -> Anzahl Absagen
 let einladungen = {};       // contact_id -> Anzahl Einladungen
 let selected = new Set();    // ausgewählte Kontakte für Begrüßungs-SMS
 let onlyNoOpt = false;       // Filter: nur ohne erteiltes Opt-in
+let onlyInactive = false;    // Filter: nur inaktive Kontakte
 let lastVisible = [];        // aktuell sichtbare Kontakt-IDs
 
 function normPhone(raw){
@@ -300,7 +302,8 @@ function renderList(){
     const textOk = !q || [c.name,c.vorname,c.handy,c.ort,c.gutschein_nr,c.firma].filter(Boolean).join(" ").toLowerCase().includes(q);
     const flagsOk = filterFlags.every(f=>(c.flags||[]).includes(f));   // muss ALLE aktiven Filter-Flags haben
     const optOk = !onlyNoOpt || !c.consent;                            // Filter „nur ohne Opt-in“
-    return textOk && flagsOk && optOk;
+    const aktivOk = !onlyInactive || !c.aktiv;                          // Filter „nur inaktive“
+    return textOk && flagsOk && optOk && aktivOk;
   });
   lastVisible = list.map(c=>c.id);
   $("cCount").textContent = list.length;
@@ -354,6 +357,7 @@ $("selAll").addEventListener("change",()=>{
   renderList();
 });
 $("fltNoOpt").addEventListener("click",()=>{ onlyNoOpt=!onlyNoOpt; $("fltNoOpt").classList.toggle("on",onlyNoOpt); renderList(); });
+$("fltInactive").addEventListener("click",()=>{ onlyInactive=!onlyInactive; $("fltInactive").classList.toggle("on",onlyInactive); renderList(); });
 $("welcomeBtn").addEventListener("click", async ()=>{
   const ids=[...selected];
   if(!ids.length) return;

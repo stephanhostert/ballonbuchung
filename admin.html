@@ -468,7 +468,7 @@ $("doneBtn").addEventListener("click", async ()=>{
     .select("contacts(id, gutschein_nr, bemerkung)")
     .eq("fahrt_id",fahrt.id).eq("status","bestaetigt");
   const datum = new Date(fahrt.datum+"T00:00:00").toLocaleDateString("de-DE");
-  const note = "Geflogen am "+datum;
+  const note = "Gefahren am "+datum;
   let n=0;
   for(const r of (regs||[])){
     const c=r.contacts; if(!c || !c.gutschein_nr) continue;
