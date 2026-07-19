@@ -401,11 +401,17 @@ async function load(){
 }
 
 function buildPersonOptions(){
-  const max = Math.max(1, (info && info.gutschein_personen) || 1);
+  const associe = !!(info && info.associe);
+  // Associe: nicht an Gutschein gebunden -> bis zu den freien Plätzen der Fahrt
+  const max = associe
+    ? Math.max(1, (info && info.frei_personen) || 1)
+    : Math.max(1, (info && info.gutschein_personen) || 1);
   const sel=$("personSel"); sel.innerHTML="";
   for(let i=1;i<=max;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=i+(i===1?" Person":" Personen"); sel.appendChild(o); }
   sel.value=String(max);
-  $("paxNote").textContent = "Dein Gutschein gilt für "+max+" "+(max===1?"Person":"Personen")+".";
+  $("paxNote").textContent = associe
+    ? "Du kannst bis zu "+max+" "+(max===1?"Platz":"Plätze")+" buchen (freie Plätze)."
+    : "Dein Gutschein gilt für "+max+" "+(max===1?"Person":"Personen")+".";
   buildWeights();
 }
 function buildWeights(){

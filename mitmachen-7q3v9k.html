@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  MITMACHEN / SELBST-EINTRAGUNG · STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Oeffentliche Seite (QR-Ziel). Mitarbeiter/Freunde tragen sich selbst ein.
+  Ruft RPC selbst_eintragen -> consent=true, Flag "Mitarbeiter".
+  Logo als separate Datei logo.png (muss mit hochgeladen werden).
+  (c) Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Mitmachen · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:600px;margin:0 auto;padding:15px max(22px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;}
+  .wm-logo{width:42px;height:42px;flex:none;border-radius:7px;overflow:hidden;display:block;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:1.04rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
+  .wrap{max-width:600px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 60px;}
+  .hero{margin-bottom:24px;}
+  .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.08;letter-spacing:-.015em;}
+  .sub{color:var(--ink-soft);font-size:.95rem;margin-top:11px;}
+  .sub b{color:var(--ink);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
+  .field{margin-bottom:15px;}
+  .field:last-of-type{margin-bottom:0;}
+  .field label{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dark);font-weight:700;display:block;margin-bottom:7px;}
+  .field label .opt{color:var(--ink-faint);letter-spacing:0;text-transform:none;font-weight:500;}
+  .field input{width:100%;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:11px 12px;font-family:var(--sans);}
+  .field input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(0,166,226,.2);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+  .status{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.9rem;}
+  .status.bad{background:var(--neg-soft);border:1px solid #e7c2bb;color:var(--neg);}
+  .status .ico{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:.85rem;color:#fff;background:var(--neg);}
+  .status.hide{display:none;}
+  button.cta{width:100%;margin-top:20px;padding:15px;font-size:1.02rem;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:8px;cursor:pointer;transition:background .16s;}
+  button.cta:hover{background:var(--brand-dark);}
+  button.cta:disabled{background:#c7cdc4;cursor:not-allowed;}
+  .note{color:var(--ink-faint);font-size:.8rem;margin-top:14px;}
+  .screen{display:none;}
+  .screen.show{display:block;}
+  .result{text-align:center;padding:14px 6px 6px;}
+  .result .ic{width:60px;height:60px;border-radius:50%;margin:0 auto 15px;display:grid;place-items:center;font-size:1.9rem;color:#fff;background:var(--pos);}
+  .result h2{font-size:1.35rem;margin-bottom:9px;}
+  .result p{color:var(--ink-soft);font-size:.92rem;max-width:360px;margin:0 auto;}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;line-height:1.7;}
+  footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
+  footer a{color:var(--brand-dark);font-weight:600;text-decoration:none;border-bottom:1px solid var(--wood);}
+  .qrcard{margin-top:18px;}
+  .qrhead{font-size:.9rem;font-weight:600;color:var(--ink-soft);margin-bottom:14px;}
+  .qrrow{display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
+  .qrbox{background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px;min-width:150px;min-height:150px;display:grid;place-items:center;}
+  .qrmeta{flex:1;min-width:200px;}
+  .qrmeta input{width:100%;font-family:var(--mono);font-size:.76rem;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px;}
+  .qrbtns{display:flex;gap:8px;flex-wrap:wrap;}
+  .btnghost{padding:9px 14px;font-size:.82rem;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--line);border-radius:7px;cursor:pointer;}
+  .btnghost:hover{border-color:var(--brand);}
+  @media(max-width:560px){.wrap{padding:22px max(13px,env(safe-area-inset-left)) 46px;}.card{padding:17px;}h1{font-size:1.55rem;}.row2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <img class="wm-logo" alt="Steffen Holzbau" src="logo.png">
+    <div>
+      <div class="wm-name">STEFFEN <span>HOLZBAU</span></div>
+      <div class="wm-tag">BALLONTEAM</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Formular -->
+  <div id="screen-form" class="screen show">
+    <div class="hero">
+      <div class="kicker">Ballonteam · Mitmachen</div>
+      <h1>Auf die Ballonfahrt-Liste</h1>
+      <div class="sub">Trag dich hier ein, dann laden wir dich per <b>SMS</b> ein, sobald eine Ballonfahrt ansteht – <b>wer zuerst kommt, fährt.</b></div>
+    </div>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label>Vorname</label><input type="text" id="fVorname" autocomplete="given-name"></div>
+        <div class="field"><label>Name</label><input type="text" id="fName" autocomplete="family-name"></div>
+      </div>
+      <div class="field"><label>Ort <span class="opt">(optional)</span></label><input type="text" id="fOrt" autocomplete="address-level2"></div>
+      <div class="field"><label>Handynummer</label><input type="tel" id="fHandy" inputmode="tel" placeholder="+352 691 000000 oder 0151 …" autocomplete="tel"></div>
+      <div id="errBox" class="status bad hide"><span class="ico">!</span><span id="errTxt"></span></div>
+      <button class="cta" id="submitBtn">Eintragen</button>
+      <div class="note">Mit dem Eintragen bist du einverstanden, per SMS über Ballonfahrten informiert zu werden. Du kannst dich jederzeit über den Link in der SMS wieder abmelden.</div>
+    </div>
+
+    <div class="card qrcard">
+      <div class="qrhead">Zum Weitergeben oder Aushängen – diesen Zettel scannen lassen:</div>
+      <div class="qrrow">
+        <div id="qrBox" class="qrbox"></div>
+        <div class="qrmeta">
+          <input id="qrLink" readonly>
+          <div class="qrbtns">
+            <button type="button" id="qrCopyBtn" class="btnghost">Link kopieren</button>
+            <button type="button" id="qrPrintBtn" class="btnghost">Als Aushang drucken</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“<br>
+      <a href="https://www.steffen-holzbau.lu" target="_blank" rel="noopener">www.steffen-holzbau.lu</a></footer>
+  </div>
+
+  <!-- Danke -->
+  <div id="screen-ok" class="screen">
+    <div class="card"><div class="result">
+      <div class="ic">&#10003;</div>
+      <h2>Du bist dabei! 🎈</h2>
+      <p>Danke, <b id="okName"></b>! Wir haben dich auf der Liste. Sobald eine Ballonfahrt ansteht, bekommst du eine SMS mit deinem Anmeldelink.</p>
+    </div></div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“<br>
+      <a href="https://www.steffen-holzbau.lu" target="_blank" rel="noopener">www.steffen-holzbau.lu</a></footer>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://jorngnkbyvxkntvaadcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_R7dJv2fCtG8ud3dDCaeqUQ_9BfG52EI";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id)=>document.getElementById(id);
+
+function show(id){ ["screen-form","screen-ok"].forEach(s=>$(s).classList.toggle("show", s===id)); window.scrollTo(0,0); }
+function showErr(t){ $("errTxt").textContent=t; $("errBox").classList.remove("hide"); }
+function clearErr(){ $("errBox").classList.add("hide"); }
+
+async function submit(){
+  clearErr();
+  const vorname=$("fVorname").value.trim();
+  const name=$("fName").value.trim();
+  const ort=$("fOrt").value.trim();
+  const handy=$("fHandy").value.trim();
+  if(!vorname && !name){ showErr("Bitte Vor- und Nachnamen eintragen."); return; }
+  if(handy.replace(/[^0-9]/g,"").length < 6){ showErr("Bitte eine gültige Handynummer eintragen."); return; }
+  const btn=$("submitBtn"); btn.disabled=true; btn.textContent="Wird eingetragen…";
+  const { data, error } = await sb.rpc("selbst_eintragen", { p_vorname:vorname, p_name:name, p_ort:ort, p_handy:handy });
+  btn.disabled=false; btn.textContent="Eintragen";
+  if(error){ showErr("Verbindungsfehler – bitte nochmal versuchen."); return; }
+  if(!data || !data.ok){
+    showErr(data && data.reason==="handy" ? "Bitte eine gültige Handynummer eintragen." : "Eintragen nicht möglich – bitte prüfen.");
+    return;
+  }
+  $("okName").textContent = vorname || name;
+  show("screen-ok");
+}
+$("submitBtn").addEventListener("click", submit);
+$("fHandy").addEventListener("keydown",(e)=>{ if(e.key==="Enter") submit(); });
+
+// ---- QR / Link dieser Seite (zum Aushaengen/Weitergeben) ----
+function shareUrl(){ return location.href.split("#")[0]; }
+function renderShareQR(){
+  const url=shareUrl(); $("qrLink").value=url;
+  const box=$("qrBox"); box.innerHTML="";
+  if(window.QRCode){ new QRCode(box,{ text:url, width:140, height:140, colorDark:"#262420", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); }
+  else { box.textContent="QR"; }
+}
+$("qrCopyBtn").addEventListener("click", async ()=>{
+  try{ await navigator.clipboard.writeText(shareUrl()); const b=$("qrCopyBtn"); const t=b.textContent; b.textContent="Kopiert ✓"; setTimeout(()=>b.textContent=t,1500); }
+  catch(e){ $("qrLink").select(); }
+});
+$("qrPrintBtn").addEventListener("click", ()=>{
+  const url=shareUrl();
+  const node=$("qrBox").querySelector("img") || $("qrBox").querySelector("canvas");
+  let src=""; if(node){ src = node.tagName==="CANVAS" ? node.toDataURL() : node.src; }
+  const logo=new URL("logo.png", location.href).href;
+  const w=window.open("","_blank","width=460,height=640");
+  if(!w) return;
+  w.document.write('<html><head><meta charset="utf-8"><title>Ballonteam - Mitmachen</title></head>'+
+    '<body style="font-family:system-ui,Arial,sans-serif;text-align:center;padding:34px;color:#262420">'+
+    '<img src="'+logo+'" style="width:60px;height:60px;border-radius:8px"><br>'+
+    '<h2 style="color:#0a7da9;letter-spacing:.06em;margin:10px 0 2px">STEFFEN HOLZBAU BALLONTEAM</h2>'+
+    '<p style="margin:0 0 6px;font-size:17px;font-weight:600">Mit auf die Ballonfahrt-Liste!</p>'+
+    '<p style="margin:0 0 20px;font-size:14px;color:#555">QR scannen und eintragen - wir laden dich per SMS ein.</p>'+
+    (src?'<img src="'+src+'" style="width:300px;height:300px">':'')+
+    '<p style="font-size:11px;color:#666;word-break:break-all;margin-top:16px">'+url+'</p>'+
+    '</body></html>');
+  w.document.close(); w.focus(); setTimeout(()=>{ try{w.print();}catch(e){} }, 350);
+});
+renderShareQR();
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                   

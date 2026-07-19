@@ -561,7 +561,7 @@ function scheduleWind(){ clearTimeout(windTimer); windTimer=setTimeout(autoWind,
 
 // ---- QR / Selbst-Eintragung ----
 function renderQR(){
-  const url = new URL("beitreten.html", location.href).href;
+  const url = new URL("mitmachen-7q3v9k.html", location.href).href;
   $("qrLink").value = url;
   const box=$("qrBox"); box.innerHTML="";
   if(window.QRCode){
