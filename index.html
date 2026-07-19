@@ -127,6 +127,7 @@
   footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;line-height:1.7;}
   footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
   @media(max-width:560px){.wrap{padding:22px max(13px,env(safe-area-inset-left)) 46px;}.card{padding:17px;}h1{font-size:1.55rem;}}
+  .balloon-ic{height:1.15em;width:auto;vertical-align:-.2em;}
 </style>
 </head>
 <body>
@@ -209,7 +210,7 @@
   <div id="screen-ok" class="screen">
     <div class="card"><div class="result ok">
       <div class="ic">&#10003;</div>
-      <h2>Platz gesichert! 🎈</h2>
+      <h2>Platz gesichert! <img class="balloon-ic" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABICAMAAABhhE1dAAAAwFBMVEUAAAAILlkmTHKWDyionp9aWG9kCyWhXGIuYYtXbopgLkyfM0osDiEtYZXb08vJrKgJZ3MzZJFSZqMsYJHQUGBmZm/Nw7phk6sbLXAAAP9Qb5NWdZp1iJkA+v8WRXiZdojLOEgXMVZ4CnhUUnX/+PiWW3idoa4lLVQIRHtxFRWqVaqUbY+mpsya2f//AAAAcuUVruBYMVpsXnJahK1VkMhh7P+sOXKodnbHEjQMHz8/P78wiK1SLFxmM5lKQj9pkbAdSHL2AAAAQHRSTlMA/v7+/f3++vj5+v39HP7+Cl8Tn/sL/yAQAZ9e/wGm6v2jAmICqwxGYwMDXiYQAQMSXK+fFAYEBf1oBEWmBfpBvMXJzAAAA+9JREFUeNrtl9l64jgQhUuyZVkSQt6wic2WBpLMJOl9unv293+rqRKLMRgCF3PX9QHhwj+n6uhYcgBur8rCz/pZ/2vd2fEdJFjj7Fokgff0593uF7K7K2QISdI8j3Oq9Kpk/wJgZ7O4rcbmGUwvMjiF/UsHmjOttVREfU3i/DK1AlhqI908CrB+CIRyAHwnF6AHaEIjw+FwHhgpi0IIoZqPSZzCB2uTsxBAuC03xJKBMUUxb6DCxu30zEwvYczDieJ8EoblhloURdGMaFxr0+xUbwqrmrOYM+YpKkltLuSf8C2DLIM0hT9OF3dGAL25Epw+ccJh6cK6oh2pAosDJscZQsgX31asQkd9OiPXz1OkII1tF7PwxLsQaXlPHDpSyKYaQZbmtpuuvz2iowNOKYUDoidkyRq+QTLKUziM8/uEacaiiCiMxabFXZ/FYlE8j75P7YvNx50W71EmIkpjLswhhW26oqjgO1T/Qt6ZLEFEIyTpIwja4WJVekvWHyFrKkjzwxY/aS1EFIlQEGUEdqm9YjwpvSULWcf16i5DsdaQz1ooEQmlZBRhFA2ld0MpbyWOJlWNVnf8UBhUQWlVQlIqopZCMychBnIhGwsPdYfCyxlDjAnlqail8DVx0hhZqzprDvOhuELPBQVKzJHSmMFQ07CCzMRsgRHYbZ0d7gg547tA0YXCp3c/HPpYDh3e2uoL2NXBcrFO8SPKlQ6ThVQD6UGmeB9FlviYxCIsSxlQi1kK5yk0E1fBGCP2UQ4MYR03Zuy0aDgn9ZbDNSQ/0kPnn44IvqX8ehOnhi7AwfLsMBv2jJZ3xEu5MsSdLu04b3k/Nd8ZsqWy7gbeMxhdPJcm2AyGsjqubXcP6BHz15bOeS0mcJ9D3zta4x6xjYILfY9sIgNZo4OjzpmV8D7KOSeJYrx0Rqn8aAdOTsWImngXUSrcWAjZ8YbYK8aV9FK43iLOjyEUe+J9FIpo/CYohsm05zie9UACRSKMijLmdMP2h6vVLGqhAd2UfFKSh0w4idC45yh6ByOtowGBg8Eg8udlIEMZRHTnqK7pbY1gJIjbQBsKC39GOZnS2XcGq5RAbNBqeQq9WMKvZ0/mMWSxOKYCpuafemdq1cacecqfEsF2turMTC1miWI7LQLnD/vHo/NNjhDZu4FHjHxLaQsyOiM21A+zfvXPFG8XrttebD29SomW+1HvTDSvFyw/fnB7XWKg6IR4gaufK8myx2Vaw/z5aqWtlUtef63etLx7j47GQkyaK41opX7Hg/MLrG6BElwzPPfE8kaxe6LkGw+8p9SAKPnbTdAHNvhH3Ewl95R88Xl1W4fjRzyq7+Hivw3/AVjrQaUtU1kVAAAAAElFTkSuQmCC"></h2>
       <p>Deine Anmeldung ist bestätigt.</p>
       <div class="rcap">
         <div><span>Termin</span><b id="okTermin">–</b></div>
@@ -255,7 +256,7 @@
     <div class="hero">
       <div class="kicker">Ballonteam · Willkommen</div>
       <h1>Unsere Passagierliste ist jetzt digital</h1>
-      <div class="sub">Hallo <b id="optName">…</b>, schön, dass du dabei bist! 🎈</div>
+      <div class="sub">Hallo <b id="optName">…</b>, schön, dass du dabei bist! <img class="balloon-ic" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABICAMAAABhhE1dAAAAwFBMVEUAAAAILlkmTHKWDyionp9aWG9kCyWhXGIuYYtXbopgLkyfM0osDiEtYZXb08vJrKgJZ3MzZJFSZqMsYJHQUGBmZm/Nw7phk6sbLXAAAP9Qb5NWdZp1iJkA+v8WRXiZdojLOEgXMVZ4CnhUUnX/+PiWW3idoa4lLVQIRHtxFRWqVaqUbY+mpsya2f//AAAAcuUVruBYMVpsXnJahK1VkMhh7P+sOXKodnbHEjQMHz8/P78wiK1SLFxmM5lKQj9pkbAdSHL2AAAAQHRSTlMA/v7+/f3++vj5+v39HP7+Cl8Tn/sL/yAQAZ9e/wGm6v2jAmICqwxGYwMDXiYQAQMSXK+fFAYEBf1oBEWmBfpBvMXJzAAAA+9JREFUeNrtl9l64jgQhUuyZVkSQt6wic2WBpLMJOl9unv293+rqRKLMRgCF3PX9QHhwj+n6uhYcgBur8rCz/pZ/2vd2fEdJFjj7Fokgff0593uF7K7K2QISdI8j3Oq9Kpk/wJgZ7O4rcbmGUwvMjiF/UsHmjOttVREfU3i/DK1AlhqI908CrB+CIRyAHwnF6AHaEIjw+FwHhgpi0IIoZqPSZzCB2uTsxBAuC03xJKBMUUxb6DCxu30zEwvYczDieJ8EoblhloURdGMaFxr0+xUbwqrmrOYM+YpKkltLuSf8C2DLIM0hT9OF3dGAL25Epw+ccJh6cK6oh2pAosDJscZQsgX31asQkd9OiPXz1OkII1tF7PwxLsQaXlPHDpSyKYaQZbmtpuuvz2iowNOKYUDoidkyRq+QTLKUziM8/uEacaiiCiMxabFXZ/FYlE8j75P7YvNx50W71EmIkpjLswhhW26oqjgO1T/Qt6ZLEFEIyTpIwja4WJVekvWHyFrKkjzwxY/aS1EFIlQEGUEdqm9YjwpvSULWcf16i5DsdaQz1ooEQmlZBRhFA2ld0MpbyWOJlWNVnf8UBhUQWlVQlIqopZCMychBnIhGwsPdYfCyxlDjAnlqail8DVx0hhZqzprDvOhuELPBQVKzJHSmMFQ07CCzMRsgRHYbZ0d7gg547tA0YXCp3c/HPpYDh3e2uoL2NXBcrFO8SPKlQ6ThVQD6UGmeB9FlviYxCIsSxlQi1kK5yk0E1fBGCP2UQ4MYR03Zuy0aDgn9ZbDNSQ/0kPnn44IvqX8ehOnhi7AwfLsMBv2jJZ3xEu5MsSdLu04b3k/Nd8ZsqWy7gbeMxhdPJcm2AyGsjqubXcP6BHz15bOeS0mcJ9D3zta4x6xjYILfY9sIgNZo4OjzpmV8D7KOSeJYrx0Rqn8aAdOTsWImngXUSrcWAjZ8YbYK8aV9FK43iLOjyEUe+J9FIpo/CYohsm05zie9UACRSKMijLmdMP2h6vVLGqhAd2UfFKSh0w4idC45yh6ByOtowGBg8Eg8udlIEMZRHTnqK7pbY1gJIjbQBsKC39GOZnS2XcGq5RAbNBqeQq9WMKvZ0/mMWSxOKYCpuafemdq1cacecqfEsF2turMTC1miWI7LQLnD/vHo/NNjhDZu4FHjHxLaQsyOiM21A+zfvXPFG8XrttebD29SomW+1HvTDSvFyw/fnB7XWKg6IR4gaufK8myx2Vaw/z5aqWtlUtef63etLx7j47GQkyaK41opX7Hg/MLrG6BElwzPPfE8kaxe6LkGw+8p9SAKPnbTdAHNvhH3Ewl95R88Xl1W4fjRzyq7+Hivw3/AVjrQaUtU1kVAAAAAElFTkSuQmCC"></div>
     </div>
     <div class="card">
       <p style="color:var(--ink-soft);margin:0 0 12px">
@@ -344,7 +345,7 @@ async function optSave(){
   btn.disabled=false; btn.textContent="Speichern";
   if(error || !data || !data.ok){ $("optErr").classList.remove("hide"); return; }
   if(wert){
-    $("optOkTitle").textContent = "Perfekt, du bist dabei! 🎈";
+    $("optOkTitle").innerHTML = 'Perfekt, du bist dabei! <img class="balloon-ic" alt="" src="'+((document.querySelector(".balloon-ic")||{}).src||"")+'">';
     $("optOkText").textContent  = "Wir informieren dich per SMS, sobald eine Ballonfahrt ansteht.";
   } else {
     $("optOkTitle").textContent = "Alles klar";
