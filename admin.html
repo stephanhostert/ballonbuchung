@@ -164,19 +164,18 @@
       <div class="field"><label>Datum</label><input type="date" id="fDatum"></div>
       <div class="field"><label>Uhrzeit</label><input type="time" id="fZeit" value="06:00"></div>
       <div class="field"><label>Treffpunkt <span class="hint">(Ortsname – Vorschläge aus früheren Fahrten)</span></label><input type="text" id="fOrt" value="Hofweiler" list="ortList" autocomplete="off"><datalist id="ortList"></datalist></div>
-      <div class="field"><label>Windrichtung <span class="hint">(automatisch aus der Wettervorhersage)</span></label>
-        <select id="fWind"><option>N</option><option>NO</option><option>O</option><option>SO</option><option>S</option><option>SW</option><option>W</option><option selected>NW</option></select>
-        <div id="windInfo" style="font-size:.76rem;color:var(--ink-faint);margin-top:6px;min-height:1em"></div></div>
-      <div class="field"><label>Max. Personen</label><div class="input-row"><input type="number" id="fMaxPax" value="4" min="1" max="8"><span class="unit">Pers.</span></div></div>
-      <div class="field"><label>Max. Gesamtgewicht <span class="hint">(<a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:600;text-decoration:none;border-bottom:1px solid var(--wood)">Tragkraftberechnung</a>)</span></label><div class="input-row"><input type="number" id="fMaxKg" value="340" min="50" step="10"><span class="unit">kg</span></div></div>
       <div class="field"><label>Pilot</label>
         <select id="fPilot">
           <option value="Stephan Hostert|+352691919020">Stephan Hostert · +352 691 919 020</option>
           <option value="Ferdi Steffen|+352691919029">Ferdi Steffen · +352 691 919 029</option>
         </select></div>
+      <input type="hidden" id="fWind" value="NW">
+      <div class="field"><label>Max. Personen</label><div class="input-row"><input type="number" id="fMaxPax" value="4" min="1" max="8"><span class="unit">Pers.</span></div></div>
+      <div class="field"><label>Max. Gesamtgewicht <span class="hint">(<a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:600;text-decoration:none;border-bottom:1px solid var(--wood)">Tragkraftberechnung</a>)</span></label><div class="input-row"><input type="number" id="fMaxKg" value="340" min="50" step="10"><span class="unit">kg</span></div></div>
       <div class="field full"><label>Treffpunkt-Link <span class="hint">(Google Maps – in SMS &amp; Anmeldeseite)</span></label><input type="text" id="fMaps" placeholder="https://maps.google.com/?q=..."></div>
       <div class="field full"><label>Notiz <span class="hint">(intern)</span></label><input type="text" id="fNotiz"></div>
     </div>
+    <div id="windInfo" style="font-size:.78rem;color:var(--ink-faint);margin:2px 0 6px;min-height:1em"></div>
     <div id="wxPanel" style="display:none;margin-top:4px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:.85rem;color:var(--ink-soft)"></div>
     <button class="cta" id="createBtn">Termin anlegen</button>
     <div id="createMsg" class="msg ok hide"></div>
@@ -569,16 +568,17 @@ async function autoWind(){
     const thermEnd   = ss? addHours(ss, -2) : "–";
 
     $("windInfo").textContent="Wind aus "+dir+" gesetzt ("+Math.round(deg)+"°) – anpassbar.";
+    const col=(t,c)=>'<span style="color:'+c+'">'+t+'</span>';
+    const boeCol = gust>=25?"#bf3a2b":(gust>=15?"#9a6b00":"var(--ink)");
+    const visTxt = visKm>=99?"&gt;99":visKm.toFixed(visKm<10?1:0);
     $("wxPanel").innerHTML =
-      '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter für '+g.name+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
+      '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter · '+g.name+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
       wxRow("Wind", "aus "+dir+" ("+Math.round(deg)+"°)")+
-      wxRow("Bodenwind", spd+" km/h")+
-      wxRow("Böen", gust+" km/h", gust>=25?"#bf3a2b":(gust>=15?"#9a6b00":null))+
-      wxRow("Thermik (geschätzt)", thermStart+" – "+thermEnd)+
-      wxRow("Nebelrisiko", nebel+" (Sicht "+(visKm>=99?"&gt;99":visKm.toFixed(visKm<10?1:0))+" km, "+rh+"% rF)", riskColor(nebel))+
-      wxRow("Gewitterrisiko", gew+" (CAPE "+cape+", Regen "+pprob+"%)", riskColor(gew))+
-      wxRow("Sonnenaufgang", hhmm(sr))+
-      '<div style="display:flex;justify-content:space-between;gap:14px;padding:4px 0"><span>Sonnenuntergang</span><b style="font-family:var(--mono);font-weight:600">'+hhmm(ss)+'</b></div>';
+      wxRow("Bodenwind / Böen", spd+" / "+col(gust, boeCol)+" km/h")+
+      wxRow("Thermik (geschätzt)", thermStart+"–"+thermEnd)+
+      wxRow("Nebel / Gewitter", col(nebel, riskColor(nebel))+" / "+col(gew, riskColor(gew)))+
+      wxRow("Sicht / Regen / CAPE", visTxt+" km / "+pprob+"% / "+cape)+
+      '<div style="display:flex;justify-content:space-between;gap:14px;padding:4px 0"><span>Sonne ↑ / ↓</span><b style="font-family:var(--mono);font-weight:600">'+hhmm(sr)+" / "+hhmm(ss)+'</b></div>';
     $("wxPanel").style.display="block";
   }catch(e){ $("windInfo").textContent="Wetterabruf nicht möglich – bitte manuell."; $("wxPanel").style.display="none"; }
 }
