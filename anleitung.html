@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  ANLEITUNG / BEDIENUNG  ·  STEFFEN HOLZBAU BALLONTEAM
+  ----------------------------------------------------------------------------
+  Kurzanleitung fuer Piloten. Reine Bedienung, keine Technik.
+  (c) Stephan Hostert
+  ============================================================================
+-->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Anleitung · Ballonfahrt-Planung · Steffen Holzbau Ballonteam</title>
+<style>
+  :root{
+    --bg:#f3efe7;--surface:#ffffff;--surface-2:#faf7f0;--ink:#26241f;--ink-soft:#5c574d;
+    --ink-faint:#928c7e;--line:#e4ddcd;--line-soft:#eee8da;--brand:#00a6e2;--brand-dark:#0a7da9;
+    --brand-soft:#daeefa;--wood:#898a7c;--anthra:#262420;--pos:#3f7d4f;--pos-soft:#e6efe5;
+    --neg:#bf3a2b;--neg-soft:#f6e3df;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --shadow:0 1px 2px rgba(38,33,22,.05),0 10px 28px rgba(38,33,22,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--bg);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .brandbar{height:4px;background:linear-gradient(90deg,var(--brand) 0%,var(--brand) 62%,var(--anthra) 62%);}
+  .topbar{background:var(--anthra);color:#fff;}
+  .topbar-in{max-width:820px;margin:0 auto;padding:15px max(22px,env(safe-area-inset-left));display:flex;align-items:center;gap:12px;}
+  .wm-logo{width:42px;height:42px;flex:none;border-radius:7px;overflow:hidden;display:block;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.18);}
+  .wm-name{font-weight:800;font-size:1.04rem;letter-spacing:.13em;}
+  .wm-name span{color:var(--brand);}
+  .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
+  .wrap{max-width:820px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 70px;}
+  .hero{margin-bottom:24px;}
+  .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
+  h1{font-weight:800;font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.08;letter-spacing:-.015em;}
+  .sub{color:var(--ink-soft);font-size:.95rem;margin-top:11px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:24px;box-shadow:var(--shadow);}
+  .card + .card{margin-top:18px;}
+  .card-head{display:flex;align-items:center;gap:11px;padding-bottom:13px;margin-bottom:16px;border-bottom:1px solid var(--line-soft);}
+  .step{width:26px;height:26px;flex:none;border-radius:50%;background:var(--brand);color:#fff;font-family:var(--mono);font-size:.82rem;font-weight:700;display:grid;place-items:center;}
+  .card-title{font-weight:700;font-size:1.08rem;}
+  h3{font-size:.95rem;font-weight:700;margin:18px 0 6px;color:var(--ink);}
+  h3:first-of-type{margin-top:0;}
+  p{margin-bottom:10px;color:var(--ink-soft);font-size:.93rem;}
+  p:last-child{margin-bottom:0;}
+  b{color:var(--ink);}
+  ul{margin:0 0 10px 20px;color:var(--ink-soft);font-size:.93rem;}
+  li{margin-bottom:5px;}
+  a{color:var(--brand-dark);font-weight:600;text-decoration:none;border-bottom:1px solid var(--wood);}
+  code{font-family:var(--mono);font-size:.85em;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+  .toc a{font-size:.8rem;font-weight:600;color:var(--brand-dark);background:var(--brand-soft);border:1px solid #b9def0;border-radius:20px;padding:5px 12px;text-decoration:none;}
+  .toc a:hover{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .hint{background:#fbf3e2;border:1px solid #ecd9b0;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:.9rem;color:var(--ink-soft);}
+  .hint b{color:#8a5a00;}
+  .warn{background:var(--neg-soft);border:1px solid #e7c2bb;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:.9rem;color:var(--ink-soft);}
+  .warn b{color:var(--neg);}
+  .ok{background:var(--pos-soft);border:1px solid #c4dcc1;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:.9rem;color:var(--ink-soft);}
+  .ok b{color:var(--pos);}
+  .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:6px 0 4px;}
+  .flow div{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:11px 13px;font-size:.85rem;color:var(--ink-soft);}
+  .flow b{display:block;color:var(--brand-dark);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;}
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;line-height:1.7;}
+  footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
+  @media(max-width:560px){.wrap{padding:22px max(14px,env(safe-area-inset-left)) 50px;}.card{padding:18px;}h1{font-size:1.55rem;}}
+</style>
+</head>
+<body>
+
+<div class="brandbar"></div>
+<div class="topbar">
+  <div class="topbar-in">
+    <img class="wm-logo" alt="Steffen Holzbau" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ4AAACXCAIAAABr6HXkAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAASdEVYdFNvZnR3YXJlAEdyZWVuc2hvdF5VCAUAAAyoSURBVHhe7Z3tT1vXHcfLQ9akSTo1UfqgrXvsNq3tVGmq2lVdp6kvJq2atK2rNDVTJ22aJk1ttfbFtnZL2rRpsxjzZBKICeQBCL42NmAIOBhsCA82YJ5sY2P7Pp5z8o9M9mUunHN9udjG0Juf9Hnzda5tfD85957zu+ee+8ADDgKYEzoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDpoHOgGmgM2Aa6AyYBjoDe0wth58cwMdcmP2nMkNnYM+ocpBTbvJ6QHHGxPfn5GeG0CGO3qac0BnYGw47yU996OKiGJMEQgQJi31x8XRQOeXJKme3LwN0BspNFUee6MfvzSkTKUHCWa8qmAjLonB5WXz+NqrZi+ZLZ6CsVHPZxjqclDYUMS91KzIW5nnxvTm5/GdfOgPl46SbNC5JMqJ1siDMT2XEF0dxNfMhxUNnoGSqOXLCjX8bUKYzIt5yBN6RhCyeDUvfGcTl6V7RGSiNh1z4J6OoaUnckGlzGPOynMKYV6MkJdPpaD6qIMwPJsQ3AsopN64qUTCdgWKpcpBvDeD3Z+VgWsKMVFFMhELBUCggyyn1xeXlub6+G5HIdP6VLc2Xt0akV3zoQSf9LbuAzkBRHO8jpydRT1Ta2gfOe43FIl5vb2urZXDwliQl1ddDoYDV+lF7e8PIiCudjlHvIkQIpsUP55VvD+Lq4povnYFdUsORHw2j5mVpVaTdZDvAcioYvH31amN9/ccWy5mBgZ6tai2WMxbLmcbGTzo7beHwJEIZ6u0ZJLji0m8m0EMu+nt3hs7Abjjqwn+akud5UcYaY5tYLHLtWktj4zlVYSG1Kk1N593um6nUGvUhCAtJWbAsSl/v3+XoiM6AMQ5x5IdDxBmX0PZ+kHoEFoS4z+dpbj6/VZ6+WhW7vX52dlySNqjuFSHCiiS85kfH+gxXr+gM7MQhjnx3EL0zowhaA1ZRTMzPT3Z3t9XVnWXN7ajWYjnT0HBuYKAnGp1HKM38pxHsq8oLI+iYy0D/mc5AYaq5e4958OsTyuC6RiECoczq6vzQEMc21l2pVbHb6ycmhjY2Vqnmi4kQ4sW/zyk/8OJafbt0BgpQy+GXcgPWZYGWSoiQSkXHxgY6Opo1G2sRai2WM1brRxzXMTc3IUkb1NdlkNAbE98IoOM63Ss6A1qccJMPwtJESlSYsY2ipMPhYG/v1cbGT1g9FLtSq9q9fPmi1+tIJJbZs++iILStyk8PIe3REZ2B7dRy+NU7ynhKzCi0VEKEdDo2NMS1tFzQb6x5dqtWpb7+XHt749zcBMb06EjBwlxGfHdWeZhtvnQGtvCoGzUtSYKWVIz5paUZm+1z1oQOxalVqas763BczWQ0ihsKyvQnpB9TFwfZ3wNUZY/A+HcBFEhLGvtRScXjiy7XNYMtdSulqFWx2S5MTo7yfJytb0TF7MXBJ/v/L5j9Yfc5R1z3XvZhy6IkMX1gjPlkciUQGL5ypa4Ir2VRm6teneO4zkhkmu1eYcy7YuKv/MpJNwa1X1DDke978Xtz8gKvUVqSpI1QKGCwu1SIsqhVD852e/3t265EYoXtXqVl8bMFCdRuctyF35xUnHFJZPrAGPOJxIrH09XaaimuseYpl1qV+vqPb95sm5z0sdeOZCSA2mwh4ukh3LIkr4o8dTEu11hTfv9gR0ej1VqSVJXyqlVpabngcl2LxyNU873f1dZy+HRQWZc0BqwY89HofFdXa0PDF/X9EtkLterxua3NEggMb22+96naKo486CTPDmF/quAcl4WFqebmT9n9WAp7pFYlV73qjMU2m+/9qPYQR77nxf8My1FRo7uUJxQKlnhmZdlTtSo222fB4EgyuXrfqT3pJr8Pyq6YqCC6Y4lQJplcyY8Xv6Rq1eNzT4/9PlJb6yQvjiLbkhQVaam5+v6a3z/o9faKYn7Xf1nV5jh7v6h91IM/WZACKY0jMEL84uJ0V1drU9P5rq5Wnl83hdoz5ld7iCOvjSNvQmPAql4593i6bLbPVYug9stBVa6+f35BUpiSYW5sk5mfn2po2NYHBrUHnWru3kk3+aVfWdDqAytKKhZbdDqv1dfTA1ZQe6A56sI/86HmJYkdsGLMp1JrY2ODV65Y2X0Bag8uNdlZhvj9OTnMaxQiZDk1PT3GcZ1W60fsjlABtQeRoy78RgD1r4sZ5syam7+/2N/fs+OVc1B7sKjiyDcGcE9MXtEasErSxvi4t729oa6uYGPNA2oPEEdc5O1ZJalkZ3GyXmOxSFdXq3pThhFA7f5TxZEjTvL8CO5fFzXn7/N8PBC4XV+/c0vdCqjdZ2py9f1/hOQ1rTuoeH59YWGqo6OxCDGgdt+o4u6dcOO3prLTIVipufn7ocHBWzrz9/UBtfvDV5zk1TuoYUniFfoInGus8Tt3+js7m3XGNjsCaitNlYN8bYB8EJZnMqLCnFkR4iORmRs3LjU0FD8hTQXUVpTs/P0xfGdD4pkBq9pYnc7rOw5YDQJqK0Q1d+8RN764qFEyVG+2mZ0db221sL+qaEDtnlPNkcc8+NcTynqBlbQIEWZnx8syy3AroHZvOeYir/iQfUXWuoPqixPtzIyf/T0lAmr3iipH9obzf4flKa2bbWR5IxSakKTN+ZigVp8DpPawk/xxSnGva6/Ps7Y239/f3d7ekMnEQa0RDoTa3Px91B2V1AVlmcaaXZ/nyhWr1fpxc/P5/F2IoFaf/Vd71IXfnVHWJJGt7+eunEfb2xus1s36Pqg1zn6qPZybPdobk9h7zRDiM5nY6Kg7L1UF1Bpnf9TWcvjp4ez6PJp9YJ5fD4WC1661sHsW1Bqn0mqrHOTxfnx6UhlNimxjxZhfXQ0NDPTYbJ+xfyuo3RUVVfsVDv/cp1xaltYlWiohgiCs377t6uy0sX9lHlBrnMqpPeUmH4blmbTG7Y4IZUKhia6u1h0v2oBa41RCbTVHXhpFc7zArnyn9oE9nm6DtzuCWuPsrdoajjzuwe2rcoH6fmp+fvLy5Yvsn1UIUGucvVJb7cjW908HlZm0Rn1fUVLR6ILbfXO3+w7UGmdP1B52klfHcMuSxB6BEcqsry9NTAwV6gPrA2qNU2a11dy9pwbxf8LSXEajvi9JydnZ8dzqEEVOhwC1ximn2mN9+C93FXd29Wdaam59nqW+vhu7OrOygFrjlEdtNUeeG0b2FSkhZ5djprwqStrvH2hrqyv9yjmoNU4Z1B5xkT/fVTbkQvP3F9vbG3c71bsQoNY4Jak96iLPDuMRrZKhemb1+TxNTUVOCdYE1BqnSLWHOPLMEP5XWGYvm+dZWQnZ7fXsV5YCqDXOrtVWObKP7PzDpDyS1C4ZglodDq7aGo68PIraV+QoMx0CYz6dXhsf9+ZXcgW1LAdU7Vf7iCUiTac1pkMglAmHAzdvXr506aIgbO4aUMty4NTWcOQ1f/aRnTJzBM5djEt4PN1NTZ/W1Z1tajoPanU4QGprOfLNAdy8JGsu6a0oqUhkeuvSz6BWn4Oi9jEPfnMKzWQ06vuSlFpbm+/tvUpdYQW1+uy/2iMu8gs/si2J7GJaCGUSiRWfz6N5sw2o1Wc/1VZnH9mJPwjLa5JGY0UofffuWE+PvdB0CFCrz76pfbiPvDUlDye1lzOMxyMOR2dLywX2U/KAWn32R+1TXtwdFeOSRn1fllM+n7utbecnoIBafSqtttpB/jajaA5scjfbhK9fb2HfqQmo1aeial8YRRMZjfp+fjnDrQ9N3hFQq09F1ca0ukuCsB4OBzs6mnb720CtPhVVS0lFKBOJzPT3d7MLyhoB1Oqzb2pTqejoqMdurzeynKEmoFaffVCLMb+wMHX9uq2UB8aB2h2ptFpJSt26ZW9szNb32S12BajVp6JqZ2bGipsSrAmo1aeiao0vKGsEUKtPRdWyL5UCqNUH1BYE1BoH1G4D1BYE1OoDagsCao0DarcBagsCavUBtQUBtcYBtdsAtQUBtfqA2oKAWuOA2m2A2oKAWn1AbUFArXFA7TZAbUFArT6gtiCg1jigdhugtiCgVh9Qu8nxh594+52/bn0F1BrnAa/XUUZGR/tkefPpWRsbq36/l93GOI+cePK5516ss/43/0ru8zdXuInFFti3lMjk5Ej+6V/xeGR4mGO3KYVQKKgo6fznsxuUkf8B9PlaAyc1hv8AAAAASUVORK5CYII=">
+    <div>
+      <div class="wm-name">STEFFEN <span>HOLZBAU</span></div>
+      <div class="wm-tag">BALLONTEAM</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">Ballonteam · Anleitung</div>
+    <h1>Ballonfahrt-Planung — Kurzanleitung</h1>
+    <div class="sub">Wie du als Pilot einen Termin ausschreibst, Passagiere einlädst und die Fahrt abschließt. Alles läuft im Browser (Handy oder PC), es muss nichts installiert werden.</div>
+    <div class="toc">
+      <a href="#idee">Grundprinzip</a>
+      <a href="#login">Anmelden</a>
+      <a href="#fahrt">Fahrt anlegen</a>
+      <a href="#wetter">Wetter</a>
+      <a href="#empfaenger">Empfänger &amp; SMS</a>
+      <a href="#live">Anmeldungen</a>
+      <a href="#abschluss">Nach der Fahrt</a>
+      <a href="#kontakte">Kontakte</a>
+      <a href="#passagier">Was der Gast sieht</a>
+      <a href="#faq">Wenn's klemmt</a>
+    </div>
+  </div>
+
+  <!-- 1 Grundprinzip -->
+  <div class="card" id="idee">
+    <div class="card-head"><span class="step">1</span><span class="card-title">Das Grundprinzip</span></div>
+    <p>Du schreibst einen Termin aus und schickst per SMS eine Einladung an ausgewählte Interessenten. Wer sich zuerst anmeldet, bekommt den Platz — <b>wer zuerst kommt, fährt</b>. Sobald Personenzahl oder Gewicht voll sind, schließt sich das Anmeldefenster automatisch.</p>
+    <div class="flow">
+      <div><b>1 Termin</b>Datum, Zeit, Treffpunkt anlegen</div>
+      <div><b>2 Einladen</b>Empfänger wählen, SMS raus</div>
+      <div><b>3 Anmelden</b>Gäste buchen sich selbst</div>
+      <div><b>4 Abschließen</b>durchgeführt oder abgesagt</div>
+    </div>
+    <h3>Die drei Seiten</h3>
+    <ul>
+      <li><b>Fahrtplanung</b> (<code>admin.html</code>) — Termine anlegen, einladen, Anmeldungen sehen</li>
+      <li><b>Kontakte</b> (<code>kontakte.html</code>) — Interessenten pflegen, Begrüßungs-SMS, QR-Code</li>
+      <li><b>Statistik</b> (<code>statistik.html</code>) — wer wurde wie oft eingeladen, wer sagt oft ab</li>
+    </ul>
+    <p>Oben rechts auf jeder Seite kannst du zwischen ihnen wechseln.</p>
+  </div>
+
+  <!-- 2 Login -->
+  <div class="card" id="login">
+    <div class="card-head"><span class="step">2</span><span class="card-title">Anmelden</span></div>
+    <p>Alle drei Seiten sind passwortgeschützt. Du meldest dich mit <b>E-Mail und Passwort</b> an, die für dich angelegt wurden. Die Anmeldung bleibt im Browser gespeichert — du musst dich also nicht jedes Mal neu einloggen.</p>
+    <div class="warn"><b>Wichtig:</b> Ohne Login sieht niemand die Kontaktdaten. Gib deine Zugangsdaten nicht weiter — wenn ein weiterer Pilot Zugang braucht, wird für ihn ein eigener Zugang angelegt.</div>
+  </div>
+
+  <!-- 3 Fahrt anlegen -->
+  <div class="card" id="fahrt">
+    <div class="card-head"><span class="step">3</span><span class="card-title">Einen Termin anlegen</span></div>
+    <p>Auf der <b>Fahrtplanung</b> im obersten Block „Termin anlegen" ausfüllen:</p>
+    <ul>
+      <li><b>Datum &amp; Uhrzeit</b> — die geplante Startzeit.</li>
+      <li><b>Treffpunkt</b> — Ortsname. Frühere Treffpunkte werden als Vorschlag angeboten. Zusätze in Klammern sind erlaubt, z. B. <code>Hofweiler (Sportplatz)</code> — für die Wetterabfrage wird die Klammer ignoriert.</li>
+      <li><b>Pilot</b> — wer die Fahrt macht. Name und Handynummer stehen später beim Gast auf der Anmeldeseite und in der Bestätigung, damit er sich telefonisch abmelden kann.</li>
+      <li><b>Max. Personen</b> und <b>Max. Gesamtgewicht</b> — die Grenzen für diese Fahrt. Über den Link <b>Tragkraftberechnung</b> kommst du direkt zum Rechner.</li>
+      <li><b>Treffpunkt-Link</b> — Google-Maps-Link zum Treffpunkt. Der Gast bekommt ihn in der Bestätigung als anklickbaren Kartenlink.</li>
+      <li><b>Notiz</b> — nur für dich intern, der Gast sieht sie nicht.</li>
+    </ul>
+    <p>Dann auf <b>„Termin anlegen"</b>. Danach erscheinen die Blöcke für Empfänger und Anmeldungen.</p>
+    <div class="hint"><b>Tipp:</b> Eine bereits angelegte Fahrt kannst du unten über <b>„Bestehende Fahrt wählen"</b> jederzeit wieder öffnen. Durchgeführte und abgesagte Fahrten stehen dort in einer eigenen Gruppe.</div>
+  </div>
+
+  <!-- 4 Wetter -->
+  <div class="card" id="wetter">
+    <div class="card-head"><span class="step">4</span><span class="card-title">Das Wetter-Panel</span></div>
+    <p>Sobald Treffpunkt, Datum und Uhrzeit stehen, holt die App automatisch die Wettervorhersage für genau diesen Ort und Zeitpunkt:</p>
+    <ul>
+      <li><b>Wind</b> — Richtung, aus der es weht. Diese Richtung wird automatisch übernommen und für die Vorauswahl der Empfänger benutzt.</li>
+      <li><b>Bodenwind / Böen</b> — in Knoten (kt). Böen werden ab 8 kt orange und ab 13 kt rot markiert.</li>
+      <li><b>Thermik</b> — geschätztes Zeitfenster (grob: Sonnenaufgang +2 h bis Sonnenuntergang −2 h).</li>
+      <li><b>Nebel / Gewitter</b> — Risikoeinschätzung, farblich markiert.</li>
+      <li><b>Sicht / Regen / CAPE</b> und <b>Sonnenauf- und -untergang</b>.</li>
+    </ul>
+    <div class="warn"><b>Bitte beachten:</b> Das ist eine automatische Vorhersage als erste Orientierung — <b>kein Ersatz für dein eigenes Wetterbriefing</b>. Thermik- und Nebelangaben sind Schätzungen aus allgemeinen Wetterdaten.</div>
+  </div>
+
+  <!-- 5 Empfaenger -->
+  <div class="card" id="empfaenger">
+    <div class="card-head"><span class="step">5</span><span class="card-title">Empfänger auswählen und SMS senden</span></div>
+    <p>Im Block „Empfänger auswählen" siehst du die Interessenten. Sie sind bereits vorgefiltert nach <b>Wunschzeitraum</b> und <b>Windrichtung</b> (±45°) — passende Kontakte stehen oben.</p>
+    <h3>Auswählen</h3>
+    <ul>
+      <li>Über die <b>Kategorien-Chips</b> (z. B. „Liste-SH", „Mitarbeiter", „Associe") kannst du die Liste eingrenzen.</li>
+      <li>Mit <b>„nur Passende"</b>, <b>„alle (sichtbar)"</b>, <b>„keine (sichtbar)"</b> schnell an- und abwählen.</li>
+      <li>Oben siehst du laufend, wie viele gewählt sind und wie viele Plätze das theoretisch ergibt.</li>
+    </ul>
+    <p>Dann auf <b>„SMS an … Empfänger senden"</b>. Jeder bekommt eine SMS mit Datum, Uhrzeit, Treffpunkt und seinem <b>persönlichen Anmeldelink</b>.</p>
+    <div class="hint"><b>Wichtig:</b> Es werden immer nur die Kontakte angeschrieben, die gerade <b>sichtbar und angehakt</b> sind. Wenn du einen Filter gesetzt hast, gehen die SMS nur an die gefilterten Kontakte.</div>
+    <div class="ok"><b>Einwilligung:</b> Nur Kontakte mit erteiltem Opt-in bekommen Fahrt-Einladungen. Neue Kontakte müssen vorher einmal die Begrüßungs-SMS bekommen (siehe Abschnitt Kontakte).</div>
+  </div>
+
+  <!-- 6 Live -->
+  <div class="card" id="live">
+    <div class="card-head"><span class="step">6</span><span class="card-title">Anmeldungen verfolgen</span></div>
+    <p>Im Block „Anmeldungen (live)" siehst du in Echtzeit, wer gebucht hat, mit wie vielen Personen und welchem Gewicht. Zwei Balken zeigen die Auslastung nach <b>Plätzen</b> und nach <b>Gewicht</b>.</p>
+    <ul>
+      <li><b>Aktualisieren</b> — Liste neu laden.</li>
+      <li><b>Anmeldefenster schließen / öffnen</b> — Buchungen manuell stoppen oder wieder freigeben. Das Fenster schließt sich auch automatisch, wenn Plätze oder Gewicht ausgeschöpft sind.</li>
+      <li>Eine einzelne <b>Anmeldung löschen</b> — falls jemand telefonisch absagt.</li>
+    </ul>
+  </div>
+
+  <!-- 7 Abschluss -->
+  <div class="card" id="abschluss">
+    <div class="card-head"><span class="step">7</span><span class="card-title">Nach der Fahrt: abschließen oder absagen</span></div>
+    <h3>Fahrt durchgeführt</h3>
+    <p>Markiert die Fahrt als erledigt. Alle Passagiere <b>mit Gutschein-Nummer</b> werden automatisch auf <b>inaktiv</b> gesetzt und bekommen in ihrer Bemerkung den Eintrag <b>„Gefahren am …"</b>. Fährt jemand später nochmal mit, setzt du ihn in den Kontakten einfach wieder auf aktiv — ein weiterer Eintrag wird dann zusätzlich angehängt.</p>
+    <h3>Fahrt absagen</h3>
+    <p>Du gibst einen Grund an (z. B. Wetteränderung). Alle Passagiere, die zugesagt hatten, bekommen <b>automatisch eine Absage-SMS</b> mit diesem Grund. Die Fahrt wird als abgesagt markiert.</p>
+    <h3>Fahrt löschen</h3>
+    <p>Nur für Testfahrten gedacht — löscht die Fahrt komplett. Wenn schon Zusagen vorliegen, kommt vorher eine Warnung: dann besser erst <b>absagen</b> (damit die Gäste informiert werden) und danach löschen.</p>
+    <div class="warn"><b>Achtung:</b> Beim Löschen werden die Passagiere <b>nicht</b> benachrichtigt.</div>
+  </div>
+
+  <!-- 8 Kontakte -->
+  <div class="card" id="kontakte">
+    <div class="card-head"><span class="step">8</span><span class="card-title">Kontakte pflegen</span></div>
+    <p>Auf der <b>Kontakte</b>-Seite verwaltest du alle Interessenten: anlegen, bearbeiten, löschen. Wichtig sind Handynummer, Personenzahl laut Gutschein, Priorität und die Kategorien.</p>
+    <h3>Kategorien (Flags)</h3>
+    <p>Frei vergebbare Schlagworte, mehrere pro Kontakt möglich — z. B. <code>Liste-SH</code>, <code>Mitarbeiter</code>, <code>Associe</code>. Danach kannst du beim Einladen filtern.</p>
+    <div class="hint"><b>Associe:</b> Kontakte mit diesem Flag sind nicht an ihre Gutschein-Personenzahl gebunden — sie dürfen bis zur freien Kapazität der Fahrt buchen.</div>
+    <h3>Opt-in / Begrüßungs-SMS</h3>
+    <p>Bei jedem Kontakt siehst du den Status: <b>Opt-in ✓</b> (mit Datum), <b>begrüßt – wartet</b> oder <b>kein Opt-in</b>. Neue Kontakte hakst du links an und schickst ihnen <b>„Begrüßungs-SMS senden"</b>. Sie bekommen eine SMS mit Link, setzen dort einen Haken — und erst dann bekommen sie künftig Fahrt-Einladungen.</p>
+    <p>Mit den Filtern <b>„nur ohne Opt-in"</b> und <b>„nur inaktive"</b> findest du schnell, wer noch fehlt.</p>
+    <h3>Mitarbeiter &amp; Freunde per QR einladen</h3>
+    <p>Unten auf der Kontakte-Seite findest du einen <b>QR-Code</b> mit Link zur Mitmach-Seite. Wer ihn scannt, trägt sich selbst mit Name, Ort und Handynummer ein und landet automatisch mit dem Flag <b>Mitarbeiter</b>, Gutschein <b>MA</b> und erteilter Einwilligung in den Kontakten — ganz ohne Begrüßungs-SMS. Über <b>„QR drucken"</b> bekommst du einen fertigen Aushang.</p>
+    <div class="warn"><b>Bitte nicht öffentlich streuen:</b> Der Link zur Mitmach-Seite ist bewusst nicht auffindbar und soll nur gezielt weitergegeben werden (QR zeigen, Aushang, direkte Nachricht).</div>
+  </div>
+
+  <!-- 9 Passagier -->
+  <div class="card" id="passagier">
+    <div class="card-head"><span class="step">9</span><span class="card-title">Was der Gast sieht</span></div>
+    <p>Über den Link in der SMS öffnet sich seine persönliche Anmeldeseite:</p>
+    <ul>
+      <li>Termin, Treffpunkt, Windrichtung, Pilot mit Telefonnummer</li>
+      <li>freie Plätze und freies Gewicht in Echtzeit</li>
+      <li>Auswahl der Personenzahl (maximal so viele wie auf seinem Gutschein) und Gewicht pro Person</li>
+      <li>ein Häkchen zum <b>Haftungshinweis</b> — ohne das geht die Anmeldung nicht ab</li>
+      <li>alternativ: <b>„Ich kann bei diesem Termin nicht"</b> — die Absage wird für die Statistik erfasst</li>
+      <li>ganz unten: dauerhaft abmelden, wenn er gar keine Einladungen mehr will</li>
+    </ul>
+    <p>Nach erfolgreicher Anmeldung sieht er die Bestätigung mit Termin und Treffpunkt, einem <b>Google-Maps-Link</b>, einem <b>Kalender-Download</b> (4 Stunden, mit Erinnerung 1 Tag und 2 Stunden vorher), dem Hinweis zur Kleidung und der <b>Telefonnummer des Piloten</b> für kurzfristige Abmeldungen.</p>
+  </div>
+
+  <!-- 10 FAQ -->
+  <div class="card" id="faq">
+    <div class="card-head"><span class="step">?</span><span class="card-title">Wenn's mal klemmt</span></div>
+    <h3>Das Wetter-Panel sagt „Ort nicht gefunden"</h3>
+    <p>Schreib den Treffpunkt als einfachen Ortsnamen (z. B. <code>Hofweiler</code> statt einer Straßenadresse). Zusätze in Klammern stören nicht. Die Windrichtung kannst du sonst einfach ignorieren — sie dient nur der Vorauswahl.</p>
+    <h3>Ein Kontakt bekommt keine SMS</h3>
+    <p>Prüfe in den Kontakten: Ist er <b>aktiv</b>? Hat er <b>Opt-in ✓</b>? Ist eine <b>Handynummer</b> hinterlegt (mit Ländervorwahl, also <code>+49…</code> oder <code>+352…</code>)? Kontakte mit dem Hinweis <b>„Nummer prüfen"</b> haben eine unklare Nummer aus dem Import — bitte einmal nachtragen.</p>
+    <h3>Ich habe gefiltert, aber es sollen alle eine SMS bekommen</h3>
+    <p>Filter zurücksetzen (Kategorie-Chip nochmal anklicken), dann „alle (sichtbar)" wählen. Es gehen immer nur die gerade sichtbaren, angehakten Kontakte raus.</p>
+    <h3>Die Seite zeigt alte Inhalte</h3>
+    <p>Einmal hart neu laden mit <b>Strg + Umschalt + R</b> (bzw. Seite im privaten Fenster öffnen).</p>
+    <h3>Jemand will doch nochmal mitfahren</h3>
+    <p>In den Kontakten den Haken bei <b>Aktiv</b> wieder setzen. Die bisherigen „Gefahren am …"-Einträge bleiben als Historie in der Bemerkung stehen.</p>
+  </div>
+
+  <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> — Kurzanleitung Fahrtplanung · SMS-Absender „Steffballon"<br>
+  Bei Fragen zur App: Stephan Hostert</footer>
+</div>
+
+</body>
+</html>

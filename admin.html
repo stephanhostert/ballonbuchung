@@ -135,6 +135,7 @@
       <a href="kontakte.html">Kontakte</a>
       <a href="statistik.html">Statistik</a>
       <a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener">Tragkraft-Rechner</a>
+      <a href="anleitung.html" target="_blank" rel="noopener">Hilfe</a>
       <span id="whoami"></span><button id="logoutBtn" class="hidden">Abmelden</button>
     </div>
   </div>
@@ -533,7 +534,7 @@ async function autoWind(){
     if((parseInt(zeit.slice(3,5),10)||0)>=30) hh=(hh+1)%24;
     const u="https://api.open-meteo.com/v1/forecast?latitude="+g.latitude+"&longitude="+g.longitude+
       "&hourly=winddirection_10m,windspeed_10m,windgusts_10m,cape,precipitation_probability,visibility,relativehumidity_2m,weathercode"+
-      "&daily=sunrise,sunset&timezone=auto&start_date="+datum+"&end_date="+datum;
+      "&daily=sunrise,sunset&timezone=auto&windspeed_unit=kn&start_date="+datum+"&end_date="+datum;
     const r=await fetch(u); const j=await r.json();
     const H=j.hourly||{}, times=H.time||[];
     if(!times.length){ $("windInfo").textContent="Keine Vorhersage für diesen Tag (evtl. zu weit in der Zukunft)."; $("wxPanel").style.display="none"; return; }
@@ -569,12 +570,12 @@ async function autoWind(){
 
     $("windInfo").textContent="Wind aus "+dir+" gesetzt ("+Math.round(deg)+"°) – anpassbar.";
     const col=(t,c)=>'<span style="color:'+c+'">'+t+'</span>';
-    const boeCol = gust>=25?"#bf3a2b":(gust>=15?"#9a6b00":"var(--ink)");
+    const boeCol = gust>=13?"#bf3a2b":(gust>=8?"#9a6b00":"var(--ink)");
     const visTxt = visKm>=99?"&gt;99":visKm.toFixed(visKm<10?1:0);
     $("wxPanel").innerHTML =
       '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter · '+g.name+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
       wxRow("Wind", "aus "+dir+" ("+Math.round(deg)+"°)")+
-      wxRow("Bodenwind / Böen", spd+" / "+col(gust, boeCol)+" km/h")+
+      wxRow("Bodenwind / Böen", spd+" / "+col(gust, boeCol)+" kt")+
       wxRow("Thermik (geschätzt)", thermStart+"–"+thermEnd)+
       wxRow("Nebel / Gewitter", col(nebel, riskColor(nebel))+" / "+col(gew, riskColor(gew)))+
       wxRow("Sicht / Regen / CAPE", visTxt+" km / "+pprob+"% / "+cape)+

@@ -138,6 +138,7 @@
       <a href="statistik.html" id="lnkStat" class="hidden">Statistik</a>
       <a href="https://stephanhostert.github.io/Tragkraftberechnung/" target="_blank" rel="noopener" id="lnkTk" class="hidden">Tragkraft-Rechner</a>
       <a href="mitmachen-7q3v9k.html" target="_blank" rel="noopener" id="lnkMit" class="hidden">Mitmachen-Seite</a>
+      <a href="anleitung.html" target="_blank" rel="noopener" id="lnkHelp" class="hidden">Hilfe</a>
       <span id="whoami"></span>
       <button id="logoutBtn" class="hidden">Abmelden</button>
     </div>
@@ -270,8 +271,8 @@ async function initAuth(){
   const { data:{ session } } = await sb.auth.getSession();
   if(session) showApp(session.user); else showLogin();
 }
-function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk","lnkMit"].forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
-function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk","lnkMit"].forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadContacts(); renderQR(); }
+function showLogin(){ $("app").classList.add("hidden"); $("login").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk","lnkMit","lnkHelp"].forEach(i=>$(i).classList.add("hidden")); $("whoami").textContent=""; }
+function showApp(user){ $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ["logoutBtn","lnkAdmin","lnkStat","lnkTk","lnkMit","lnkHelp"].forEach(i=>$(i).classList.remove("hidden")); $("whoami").textContent=user.email; loadContacts(); renderQR(); }
 $("loginBtn").addEventListener("click", async ()=>{
   $("loginMsg").classList.add("hide");
   const { data, error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("pass").value });
