@@ -3,8 +3,9 @@
   ============================================================================
   MITMACHEN / SELBST-EINTRAGUNG · STEFFEN HOLZBAU BALLONTEAM
   ----------------------------------------------------------------------------
-  Oeffentliche Seite (QR-Ziel). Mitarbeiter/Freunde tragen sich selbst ein.
-  Ruft RPC selbst_eintragen -> consent=true, Flag "Mitarbeiter".
+  Oeffentliche Seite (QR-Ziel, unraetselbarer Dateiname, noindex).
+  Mitarbeiter/Freunde tragen sich selbst ein.
+  Ruft RPC selbst_eintragen -> consent=true, Flag "Mitarbeiter", Gutschein "MA".
   Logo als separate Datei logo.png (muss mit hochgeladen werden).
   (c) Stephan Hostert
   ============================================================================
@@ -36,13 +37,14 @@
   .wm-name span{color:var(--brand);}
   .wm-tag{font-weight:700;font-size:.6rem;letter-spacing:.34em;color:#b6b6a6;margin-top:4px;}
   .wrap{max-width:600px;margin:0 auto;padding:30px max(22px,env(safe-area-inset-left)) 60px;}
-  .hero{margin-bottom:24px;}
+  .hero{margin-bottom:20px;}
   .kicker{font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dark);display:flex;align-items:center;gap:9px;margin-bottom:12px;}
   .kicker::before{content:"";width:26px;height:2px;background:var(--brand);}
   h1{font-weight:800;font-size:clamp(1.7rem,5vw,2.3rem);line-height:1.08;letter-spacing:-.015em;}
   .sub{color:var(--ink-soft);font-size:.95rem;margin-top:11px;}
   .sub b{color:var(--ink);}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:22px;box-shadow:var(--shadow);}
+  .card + .card{margin-top:18px;}
   .field{margin-bottom:15px;}
   .field:last-of-type{margin-bottom:0;}
   .field label{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-dark);font-weight:700;display:block;margin-bottom:7px;}
@@ -67,13 +69,11 @@
   footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:.78rem;line-height:1.7;}
   footer b{color:var(--ink-soft);font-weight:700;letter-spacing:.04em;}
   footer a{color:var(--brand-dark);font-weight:600;text-decoration:none;border-bottom:1px solid var(--wood);}
-  .qrcard{margin-top:18px;}
+  .qrcard{text-align:center;}
   .qrhead{font-size:.9rem;font-weight:600;color:var(--ink-soft);margin-bottom:14px;}
-  .qrrow{display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
-  .qrbox{background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px;min-width:150px;min-height:150px;display:grid;place-items:center;}
-  .qrmeta{flex:1;min-width:200px;}
-  .qrmeta input{width:100%;font-family:var(--mono);font-size:.76rem;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px;}
-  .qrbtns{display:flex;gap:8px;flex-wrap:wrap;}
+  .qrbox{background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px;width:170px;height:170px;margin:0 auto 14px;display:grid;place-items:center;}
+  .qrmeta input{width:100%;font-family:var(--mono);font-size:.76rem;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px;text-align:center;}
+  .qrbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
   .btnghost{padding:9px 14px;font-size:.82rem;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--line);border-radius:7px;cursor:pointer;}
   .btnghost:hover{border-color:var(--brand);}
   @media(max-width:560px){.wrap{padding:22px max(13px,env(safe-area-inset-left)) 46px;}.card{padding:17px;}h1{font-size:1.55rem;}.row2{grid-template-columns:1fr;}}
@@ -99,8 +99,21 @@
     <div class="hero">
       <div class="kicker">Ballonteam · Mitmachen</div>
       <h1>Auf die Ballonfahrt-Liste</h1>
-      <div class="sub">Trag dich hier ein, dann laden wir dich per <b>SMS</b> ein, sobald eine Ballonfahrt ansteht – <b>wer zuerst kommt, fährt.</b></div>
+      <div class="sub">Trag dich ein, dann laden wir dich per <b>SMS</b> ein, sobald eine Ballonfahrt ansteht – <b>wer zuerst kommt, fährt.</b></div>
     </div>
+
+    <div class="card qrcard">
+      <div class="qrhead">Zum Weitergeben oder Aushängen – diesen QR scannen lassen:</div>
+      <div id="qrBox" class="qrbox"></div>
+      <div class="qrmeta">
+        <input id="qrLink" readonly>
+        <div class="qrbtns">
+          <button type="button" id="qrCopyBtn" class="btnghost">Link kopieren</button>
+          <button type="button" id="qrPrintBtn" class="btnghost">Als Aushang drucken</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="row2">
         <div class="field"><label>Vorname</label><input type="text" id="fVorname" autocomplete="given-name"></div>
@@ -112,21 +125,6 @@
       <button class="cta" id="submitBtn">Eintragen</button>
       <div class="note">Mit dem Eintragen bist du einverstanden, per SMS über Ballonfahrten informiert zu werden. Du kannst dich jederzeit über den Link in der SMS wieder abmelden.</div>
     </div>
-
-    <div class="card qrcard">
-      <div class="qrhead">Zum Weitergeben oder Aushängen – diesen Zettel scannen lassen:</div>
-      <div class="qrrow">
-        <div id="qrBox" class="qrbox"></div>
-        <div class="qrmeta">
-          <input id="qrLink" readonly>
-          <div class="qrbtns">
-            <button type="button" id="qrCopyBtn" class="btnghost">Link kopieren</button>
-            <button type="button" id="qrPrintBtn" class="btnghost">Als Aushang drucken</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · SMS-Absender „Steffballon“<br>
       <a href="https://www.steffen-holzbau.lu" target="_blank" rel="noopener">www.steffen-holzbau.lu</a></footer>
   </div>
@@ -183,7 +181,7 @@ function shareUrl(){ return location.href.split("#")[0]; }
 function renderShareQR(){
   const url=shareUrl(); $("qrLink").value=url;
   const box=$("qrBox"); box.innerHTML="";
-  if(window.QRCode){ new QRCode(box,{ text:url, width:140, height:140, colorDark:"#262420", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); }
+  if(window.QRCode){ new QRCode(box,{ text:url, width:150, height:150, colorDark:"#262420", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M }); }
   else { box.textContent="QR"; }
 }
 $("qrCopyBtn").addEventListener("click", async ()=>{
@@ -212,4 +210,3 @@ renderShareQR();
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                   
