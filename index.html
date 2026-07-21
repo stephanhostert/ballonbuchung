@@ -163,7 +163,7 @@
     <div class="hero">
       <div class="kicker">Ballonteam · Kurzfristiger Termin</div>
       <h1 id="fTitle">Ballonfahrt</h1>
-      <div class="sub">Hallo <b id="paxName">…</b> – für dich ist ein Platz vormerkbar. Melde dich an, solange frei ist: <b>wer zuerst kommt, fährt.</b></div>
+      <div class="sub">Hallo <b id="paxName">…</b> – für dich ist ein Platz vormerkbar. Melde dich an, solange frei ist: <b>wer zuerst bucht, fährt mit.</b></div>
     </div>
 
     <div class="card">
@@ -237,6 +237,7 @@
       <div class="ic">&#10005;</div>
       <h2 id="noTitle">Leider ausgebucht</h2>
       <p id="noText">Diese Fahrt ist voll. Beim nächsten Termin bekommst du wieder eine Nachricht.</p>
+      <button class="cta" id="backBtn" style="display:none;max-width:320px;margin-left:auto;margin-right:auto">Eingabe ändern</button>
     </div></div>
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
@@ -262,7 +263,7 @@
       <p style="color:var(--ink-soft);margin:0 0 12px">
         Ab sofort organisieren wir unsere Ballonfahrten digital. Sobald das Wetter passt und ein Termin ansteht,
         bekommst du eine <b>SMS mit einem persönlichen Anmeldelink</b>. Die Plätze sind begrenzt:
-        <b>wer zuerst kommt, fährt.</b> Du meldest dich nur an, wenn du Zeit und Lust hast – zu nichts verpflichtet.
+        <b>wer zuerst bucht, fährt mit.</b> Du meldest dich nur an, wenn du Zeit und Lust hast – zu nichts verpflichtet.
       </p>
       <label class="optbox"><input type="checkbox" id="optIn">
         <span>Ja, das Ballonteam darf mich künftig per SMS über Ballonfahrten informieren.</span></label>
@@ -388,14 +389,7 @@ async function load(){
     ort.appendChild(document.createElement("br")); ort.appendChild(a);
   }
 
-  $("capPaxMax").textContent = f.max_personen;
-  $("capKgMax").textContent  = f.max_gewicht_kg;
-  $("capPaxFree").textContent= info.frei_personen;
-  $("capKgFree").textContent = info.frei_gewicht;
-  const usedPaxPct = Math.min(100,(f.max_personen-info.frei_personen)/f.max_personen*100);
-  const usedKgPct  = Math.min(100,(f.max_gewicht_kg-info.frei_gewicht)/f.max_gewicht_kg*100);
-  $("barPax").querySelector("i").style.width = usedPaxPct+"%";
-  $("barKg").querySelector("i").style.width  = usedKgPct+"%";
+  updateCaps();
 
   buildPersonOptions();
   show("screen-form");
@@ -493,13 +487,44 @@ async function submit(){
   }
   switch(data.reason){
     case "geschlossen":       goNo("Anmeldefenster geschlossen","Diese Fahrt ist inzwischen voll oder geschlossen."); break;
-    case "voll_personen":     goNo("Nur noch "+data.frei_personen+" Platz frei","Für "+pick+" Personen reicht es leider nicht mehr."); break;
-    case "voll_gewicht":      goNo("Gewicht passt nicht mehr","Es sind noch "+data.frei_gewicht+" kg frei, deine Anmeldung wiegt "+r.sum+" kg."); break;
+    case "voll_personen":
+      info.frei_personen = data.frei_personen;
+      goNo("Nur noch "+data.frei_personen+" Platz frei",
+           "Für "+pick+" Personen reicht es leider nicht mehr. Du kannst es mit weniger Personen erneut versuchen.", true);
+      break;
+    case "voll_gewicht":
+      info.frei_gewicht = data.frei_gewicht;
+      goNo("Gewicht passt nicht mehr",
+           "Es sind noch "+data.frei_gewicht+" kg frei, deine Anmeldung wiegt "+r.sum+" kg. Du kannst die Eingabe ändern, z. B. mit weniger Personen.", true);
+      break;
     case "bereits_angemeldet":goNo("Du bist schon angemeldet","Für diese Fahrt liegt bereits eine Anmeldung von dir vor."); break;
     default:                  showErr("Anmeldung nicht möglich ("+data.reason+").");
   }
 }
-function goNo(t,x){ $("noTitle").textContent=t; $("noText").textContent=x; show("screen-no"); }
+function updateCaps(){
+  if(!info || !info.fahrt) return;
+  const f=info.fahrt;
+  $("capPaxMax").textContent = f.max_personen;
+  $("capKgMax").textContent  = f.max_gewicht_kg;
+  $("capPaxFree").textContent= info.frei_personen;
+  $("capKgFree").textContent = info.frei_gewicht;
+  const usedPaxPct = Math.min(100,(f.max_personen-info.frei_personen)/f.max_personen*100);
+  const usedKgPct  = Math.min(100,(f.max_gewicht_kg-info.frei_gewicht)/f.max_gewicht_kg*100);
+  $("barPax").querySelector("i").style.width = usedPaxPct+"%";
+  $("barKg").querySelector("i").style.width  = usedKgPct+"%";
+}
+// back=true -> Zurueck-Button anzeigen (Eingabe korrigierbar)
+function goNo(t,x,back){
+  $("noTitle").textContent=t; $("noText").textContent=x;
+  $("backBtn").style.display = back ? "block" : "none";
+  show("screen-no");
+}
+$("backBtn").addEventListener("click", ()=>{
+  updateCaps();
+  buildPersonOptions();
+  clearErr();
+  show("screen-form");
+});
 
 async function decline(){
   const a=$("declineBtn"); a.style.pointerEvents="none";
