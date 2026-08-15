@@ -450,16 +450,23 @@ $("doneBtn").addEventListener("click", async ()=>{
   if(!confirm("Fahrt als durchgeführt markieren?\nPassagiere mit Gutschein-Nr. werden auf inaktiv gesetzt (mit Fahrtdatum in der Bemerkung).")) return;
   const btn=$("doneBtn"); btn.disabled=true; btn.textContent="…";
   const { data:regs } = await sb.from("anmeldungen")
-    .select("contacts(id, gutschein_nr, bemerkung)")
+    .select("contacts(id, gutschein_nr, bemerkung, flags)")
     .eq("fahrt_id",fahrt.id).eq("status","bestaetigt");
   const datum = new Date(fahrt.datum+"T00:00:00").toLocaleDateString("de-DE");
   const note = "Gefahren am "+datum;
-  let n=0;
+  let n=0, nf=0;
   for(const r of (regs||[])){
-    const c=r.contacts; if(!c || !c.gutschein_nr) continue;
-    const bem = (c.bemerkung||"").includes(note) ? c.bemerkung : (c.bemerkung ? (c.bemerkung+" | "+note) : note);
-    const { error } = await sb.from("contacts").update({ aktiv:false, bemerkung:bem }).eq("id",c.id);
-    if(!error) n++;
+    const c=r.contacts; if(!c) continue;
+    const flags = Array.isArray(c.flags) ? c.flags.slice() : [];
+    if(!flags.includes("schon gefahren")) flags.push("schon gefahren");
+    const upd = { flags };                       // Flag "schon gefahren" fuer JEDEN Passagier
+    if(c.gutschein_nr){                            // Gutschein-Kontakte zusaetzlich inaktiv + Bemerkung
+      upd.aktiv = false;
+      upd.bemerkung = (c.bemerkung||"").includes(note) ? c.bemerkung : (c.bemerkung ? (c.bemerkung+" | "+note) : note);
+      n++;
+    }
+    const { error } = await sb.from("contacts").update(upd).eq("id",c.id);
+    if(!error) nf++;
   }
   await sb.from("fahrten").update({status:"durchgefuehrt"}).eq("id",fahrt.id);
 
@@ -481,7 +488,7 @@ $("doneBtn").addEventListener("click", async ()=>{
   }
 
   btn.disabled=false; btn.textContent="Fahrt durchgeführt";
-  alert("Fahrt als durchgeführt markiert. "+n+" Gutschein-Kontakt(e) auf inaktiv gesetzt."+fbMsg);
+  alert("Fahrt als durchgeführt markiert. "+nf+" Passagier(e) als 'schon gefahren' markiert, davon "+n+" Gutschein-Kontakt(e) auf inaktiv gesetzt."+fbMsg);
   loadLive(); loadFahrten();
 });
 $("cancelFahrtBtn").addEventListener("click", async ()=>{
