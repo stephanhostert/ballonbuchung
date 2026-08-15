@@ -195,6 +195,10 @@
     </div>
     <div class="filterbar" id="rcptFlags"></div>
     <div class="clist" id="clist"><div class="empty">Lädt…</div></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--ink-soft);margin:14px 0 4px;cursor:pointer">
+      <input type="checkbox" id="kopieChk" checked style="width:16px;height:16px;accent-color:var(--brand)">
+      Kopie der SMS an den Piloten senden (zur Kontrolle)
+    </label>
     <button class="cta" id="sendBtn">SMS an <span id="sendN">0</span> Empfänger senden</button>
     <div id="sendMsg" class="msg ok hide"></div>
   </div>
@@ -423,7 +427,7 @@ $("sendBtn").addEventListener("click", async ()=>{
   const ids=visibleRcpt().filter(c=>chosen[c.id]).map(c=>c.id);
   if(!ids.length) return;
   $("sendBtn").disabled=true; $("sendBtn").textContent="Sende…";
-  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, contact_ids:ids } });
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, contact_ids:ids, kopie:$("kopieChk").checked } });
   $("sendBtn").disabled=false; $("sendBtn").innerHTML='SMS an <span id="sendN">'+ids.length+'</span> Empfänger senden';
   if(error){ flash("sendMsg","bad","Versand-Fehler: "+error.message+" (Edge Function deployt & Secrets gesetzt?)"); return; }
   const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
@@ -493,7 +497,7 @@ $("updateBtn").addEventListener("click", async ()=>{
   const neueNotiz = fahrt.notiz ? (fahrt.notiz+"\n"+zeile) : zeile;
   const { error:uErr } = await sb.from("fahrten").update({ notiz:neueNotiz, update_text:txt.trim(), letztes_update_at:jetzt.toISOString() }).eq("id",fahrt.id);
   if(uErr){ btn.disabled=false; btn.textContent="Update versenden"; alert("Fehler beim Speichern: "+uErr.message); return; }
-  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"update", reason:txt.trim() } });
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"update", reason:txt.trim(), kopie:$("kopieChk").checked } });
   btn.disabled=false; btn.textContent="Update versenden";
   if(error){ alert("Update gespeichert, aber SMS-Versand fehlgeschlagen: "+error.message); loadLive(); return; }
   const total=(data&&data.results)?data.results.length:0;
@@ -578,7 +582,7 @@ $("cancelFahrtBtn").addEventListener("click", async ()=>{
   if(reason===null) return;
   if(!confirm("Fahrt wirklich absagen? Alle zugesagten Passagiere werden per SMS informiert.")) return;
   const btn=$("cancelFahrtBtn"); btn.disabled=true; btn.textContent="Sende Absagen…";
-  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"cancel", reason } });
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"cancel", reason, kopie:$("kopieChk").checked } });
   btn.disabled=false; btn.textContent="Fahrt absagen";
   if(error){ alert("Fehler: "+error.message); return; }
   const total=(data&&data.results)?data.results.length:0;
