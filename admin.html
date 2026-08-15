@@ -211,6 +211,8 @@
     <div class="actions">
       <button class="cta ghost" id="refreshBtn">Aktualisieren</button>
       <button class="cta ghost" id="closeBtn">Anmeldefenster schließen</button>
+      <button class="cta ghost" id="updateBtn" style="color:var(--brand-dark);border-color:#b9def0">Update versenden</button>
+      <button class="cta ghost" id="vcfBtn">Kontakte (VCF)</button>
       <button class="cta ghost" id="doneBtn" style="color:var(--pos);border-color:#c4dcc1">Fahrt durchgeführt</button>
       <button class="cta ghost" id="cancelFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt absagen</button>
       <button class="cta ghost" id="delFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt löschen</button>
@@ -228,6 +230,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id)=>document.getElementById(id);
 
 let fahrt = null;         // aktuelle Fahrt
+let liveRegs = [];        // aktuelle Anmeldungen (für VCF-Export)
+let editFahrtId = null;   // gesetzt = bestehende Fahrt wird bearbeitet
 let contacts = [];        // Vorschlagsliste
 let chosen = {};          // id -> bool
 let pollTimer = null;
@@ -299,7 +303,7 @@ function suggestMaps(){
 }
 $("fOrt").addEventListener("input", suggestMaps);
 $("fahrtSel").addEventListener("change", async (e)=>{
-  if(!e.target.value){ return; }
+  if(!e.target.value){ neueFahrtModus(); return; }
   const { data } = await sb.from("fahrten").select("*").eq("id",e.target.value).single();
   if(data) activateFahrt(data);
 });
@@ -313,6 +317,14 @@ $("createBtn").addEventListener("click", async ()=>{
     pilot_name:pilotName||null, pilot_tel:pilotTel||null, notiz:$("fNotiz").value||null
   };
   if(!rec.datum){ flash("createMsg","bad","Bitte ein Datum wählen."); return; }
+  if(editFahrtId){
+    // bestehende Fahrt aktualisieren (Treffpunkt/Uhrzeit/Maps etc.)
+    const { data, error } = await sb.from("fahrten").update(rec).eq("id",editFahrtId).select().single();
+    if(error){ flash("createMsg","bad","Fehler: "+error.message); return; }
+    flash("createMsg","ok","Änderungen gespeichert. Zum Benachrichtigen der Gäste unten 'Update versenden' nutzen.");
+    fahrt=data; loadLive();
+    return;
+  }
   const { data, error } = await sb.from("fahrten").insert(rec).select().single();
   if(error){ flash("createMsg","bad","Fehler: "+error.message); return; }
   flash("createMsg","ok","Termin angelegt.");
@@ -322,12 +334,28 @@ $("createBtn").addEventListener("click", async ()=>{
 
 function activateFahrt(f){
   fahrt=f;
+  // Formular oben mit den Fahrtdaten befuellen -> bearbeitbar
+  editFahrtId=f.id;
+  $("fDatum").value=f.datum||"";
+  $("fZeit").value=(f.uhrzeit||"").slice(0,5);
+  $("fOrt").value=f.treffpunkt||"";
+  $("fMaps").value=f.maps_link||"";
+  $("fWind").value=f.wind_ist||"NW";
+  $("fMaxPax").value=f.max_personen||4;
+  $("fMaxKg").value=f.max_gewicht_kg||340;
+  if(f.pilot_name||f.pilot_tel) $("fPilot").value=(f.pilot_name||"")+"|"+(f.pilot_tel||"");
+  $("fNotiz").value=f.notiz||"";
+  $("createBtn").textContent="Änderungen speichern";
   $("rcptCard").classList.remove("hidden");
   $("liveCard").classList.remove("hidden");
   chosen={}; rcptFlags=[];
   loadRecipients();
   loadLive();
   startPoll();
+}
+function neueFahrtModus(){
+  editFahrtId=null;
+  $("createBtn").textContent="Termin anlegen";
 }
 
 // ---------- Empfänger ----------
@@ -408,9 +436,14 @@ async function loadLive(){
   const { data:fresh } = await sb.from("fahrten").select("*").eq("id",fahrt.id).single();
   if(fresh) fahrt=fresh;
   const { data:regs } = await sb.from("anmeldungen")
-    .select("id,personen,gewicht_kg,created_at,contacts(vorname,name)")
+    .select("id,personen,gewicht_kg,created_at,update_bestaetigt_at,contacts(vorname,name,handy)")
     .eq("fahrt_id",fahrt.id).eq("status","bestaetigt").order("created_at",{ascending:true});
   const list=regs||[];
+  liveRegs=list;
+  const hatUpdate = !!fahrt.letztes_update_at;
+  const updTs = hatUpdate ? new Date(fahrt.letztes_update_at).getTime() : 0;
+  // Update-Button nur bei geplanten (offen/geschlossen) Fahrten
+  $("updateBtn").style.display = (fahrt.status==="offen"||fahrt.status==="geschlossen") ? "" : "none";
   const uPax=list.reduce((s,r)=>s+r.personen,0);
   const uKg=list.reduce((s,r)=>s+Number(r.gewicht_kg),0);
   $("mPax").textContent=fahrt.max_personen; $("mKg").textContent=fahrt.max_gewicht_kg;
@@ -425,7 +458,14 @@ async function loadLive(){
   if(!list.length){ box.innerHTML='<div class="empty">Noch keine Anmeldungen.</div>'; }
   else { box.innerHTML=""; list.forEach((r,i)=>{
     const c=r.contacts||{}; const row=document.createElement("div"); row.className="rr";
-    row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span><span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`+
+    let ub="";
+    if(hatUpdate){
+      const best = r.update_bestaetigt_at && new Date(r.update_bestaetigt_at).getTime() >= updTs;
+      ub = best
+        ? '<span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:var(--pos);background:var(--pos-soft);border:1px solid #c4dcc1">Update bestätigt</span>'
+        : '<span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6">Update offen</span>';
+    }
+    row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span>${ub}<span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`+
       `<button class="rr-del" data-del="${r.id}" title="Anmeldung löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>`;
     box.appendChild(row);
   });
@@ -439,6 +479,47 @@ async function delReg(id){
   loadLive();
 }
 $("refreshBtn").addEventListener("click", loadLive);
+$("updateBtn").addEventListener("click", async ()=>{
+  if(!fahrt) return;
+  const anzahl=liveRegs.length;
+  const txt=prompt("Was hat sich geändert? (z. B. neuer Treffpunkt / andere Uhrzeit)\nDieser Text geht per SMS an die "+anzahl+" eingebuchten Gäste und wird an die Notiz angehängt.\n\nWICHTIG: Termin/Treffpunkt/Uhrzeit/Maps-Link oben vorher entsprechend ändern und die Fahrt speichern.","");
+  if(txt===null) return;
+  if(!txt.trim()){ alert("Bitte einen Änderungstext eingeben."); return; }
+  if(!confirm("Update an "+anzahl+" eingebuchte(n) Gast/Gäste senden?")) return;
+  const btn=$("updateBtn"); btn.disabled=true; btn.textContent="Sende Update…";
+  const jetzt=new Date();
+  const stamp=jetzt.toLocaleDateString("de-DE")+" "+jetzt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  const zeile="Update: "+stamp+": "+txt.trim();
+  const neueNotiz = fahrt.notiz ? (fahrt.notiz+"\n"+zeile) : zeile;
+  const { error:uErr } = await sb.from("fahrten").update({ notiz:neueNotiz, update_text:txt.trim(), letztes_update_at:jetzt.toISOString() }).eq("id",fahrt.id);
+  if(uErr){ btn.disabled=false; btn.textContent="Update versenden"; alert("Fehler beim Speichern: "+uErr.message); return; }
+  const { data, error } = await sb.functions.invoke("send-sms",{ body:{ fahrt_id:fahrt.id, mode:"update", reason:txt.trim() } });
+  btn.disabled=false; btn.textContent="Update versenden";
+  if(error){ alert("Update gespeichert, aber SMS-Versand fehlgeschlagen: "+error.message); loadLive(); return; }
+  const total=(data&&data.results)?data.results.length:0;
+  const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
+  alert("Update gesendet. "+ok+"/"+total+" Gast/Gäste per SMS informiert.\nDie Quittungen erscheinen hier bei den Gästen.");
+  loadLive();
+});
+$("vcfBtn").addEventListener("click", ()=>{
+  if(!liveRegs.length){ alert("Keine eingebuchten Gäste zum Exportieren."); return; }
+  const esc=(s)=>String(s||"").replace(/[\r\n,;\\]/g," ").trim();
+  const dstr = fahrt.datum ? fahrt.datum.split("-").reverse().join(".") : "";
+  const cards=liveRegs.map(r=>{
+    const c=r.contacts||{}; const vn=esc(c.vorname), nn=esc(c.name); const tel=(c.handy||"").trim();
+    const fn=((vn+" "+nn).trim())||nn||vn||"Ballonfahrt Gast";
+    return ["BEGIN:VCARD","VERSION:3.0",
+      "N:"+nn+";"+vn+";;;","FN:"+fn,
+      tel?("TEL;TYPE=CELL:"+tel):null,
+      "NOTE:Ballonfahrt "+dstr,
+      "END:VCARD"].filter(Boolean).join("\r\n");
+  }).join("\r\n");
+  const blob=new Blob([cards+"\r\n"],{type:"text/vcard;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ballonfahrt-"+(fahrt.datum||"gaeste")+".vcf";
+  a.click();
+});
 $("closeBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
   const neu = fahrt.status==="offen" ? "geschlossen" : "offen";

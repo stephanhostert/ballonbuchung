@@ -284,6 +284,29 @@
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
 
+  <!-- Änderung zur Fahrt (Update) -->
+  <div id="screen-update" class="screen">
+    <div class="hero">
+      <div class="kicker">Ballonteam · Änderung</div>
+      <h1>Änderung zu deiner Fahrt</h1>
+      <div class="sub">Hallo <b id="upName">…</b> – zu deiner gebuchten Ballonfahrt gibt es eine Aktualisierung.</div>
+    </div>
+    <div class="card">
+      <p class="okhint" id="upText" style="margin-bottom:16px"><b>Änderung:</b> –</p>
+      <div class="card-head"><span class="bar"></span><span class="card-title">Neue Angaben</span></div>
+      <div class="details">
+        <div class="det"><div class="k">Datum</div><div class="v" id="upDatum">–</div></div>
+        <div class="det"><div class="k">Uhrzeit</div><div class="v" id="upZeit">–</div></div>
+        <div class="det" style="grid-column:1 / -1"><div class="k">Treffpunkt</div><div class="v" id="upOrt">–</div></div>
+        <div class="det" style="grid-column:1 / -1"><div class="k">Pilot (bei Rückfragen)</div><div class="v" id="upPilot">–</div></div>
+      </div>
+      <div id="upErr" class="status bad hide"><span class="ico">!</span><span id="upErrTxt"></span></div>
+      <button class="cta" id="upBtn">OK, Änderung bestätigen</button>
+      <div id="upDone" class="status hide" style="background:var(--pos-soft);border:1px solid #c4dcc1;color:var(--pos)"><span class="ico" style="background:var(--pos)">&#10003;</span><span>Danke, du hast die Änderung bestätigt.</span></div>
+    </div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
+  </div>
+
   <!-- Generell abgemeldet -->
   <div id="screen-unsub" class="screen">
     <div class="card"><div class="result bye">
@@ -311,7 +334,7 @@ const FAHRT = params.get("f");
 let info = null, pick = 1;
 
 function show(id){
-  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub","screen-welcome","screen-optok"].forEach(s=>{
+  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub","screen-welcome","screen-optok","screen-update"].forEach(s=>{
     $(s).classList.toggle("show", s===id);
   });
   window.scrollTo(0,0);
@@ -355,8 +378,50 @@ async function optSave(){
   show("screen-optok");
 }
 
+async function loadUpdate(){
+  if(!TOKEN || !FAHRT){ show("screen-info"); return; }
+  const { data, error } = await sb.rpc("anmeldung_info", { p_token: TOKEN, p_fahrt: FAHRT });
+  if(error || !data || !data.ok){
+    $("infoText").textContent = "Dieser Link ist ungültig oder abgelaufen.";
+    show("screen-info"); return;
+  }
+  info = data;
+  const f = info.fahrt;
+  $("upName").textContent = info.vorname || "";
+  $("upText").innerHTML = "<b>Änderung:</b> " + ((info.update_text||"").trim() || "Bitte prüfe die neuen Angaben unten.");
+  $("upDatum").textContent = fmtDate(f.datum);
+  $("upZeit").textContent = (f.uhrzeit? f.uhrzeit.slice(0,5):"–") + " Uhr";
+  const ort=$("upOrt"); ort.textContent = f.treffpunkt || "–";
+  if(f.maps_link){
+    const a=document.createElement("a");
+    a.className="maplink"; a.href=f.maps_link; a.target="_blank"; a.rel="noopener";
+    a.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg> In Google Maps öffnen';
+    ort.appendChild(document.createElement("br")); ort.appendChild(a);
+  }
+  if(f.pilot_name || f.pilot_tel){
+    const ptel=(f.pilot_tel||"").replace(/\s+/g,"");
+    $("upPilot").innerHTML = (f.pilot_name||"") + (ptel? ' · <a href="tel:'+ptel+'" style="color:var(--brand-dark);font-weight:600;border-bottom:1px solid var(--wood)">'+f.pilot_tel+'</a>' : '');
+  } else { $("upPilot").textContent = "–"; }
+  // schon bestaetigt?
+  if(!info.update_offen){
+    $("upBtn").style.display="none";
+    $("upDone").classList.remove("hide");
+  } else {
+    $("upBtn").style.display=""; $("upDone").classList.add("hide");
+  }
+  show("screen-update");
+}
+async function confirmUpdate(){
+  const btn=$("upBtn"); $("upErr").classList.add("hide"); btn.disabled=true; btn.textContent="Wird bestätigt…";
+  const { data, error } = await sb.rpc("update_bestaetigen", { p_token:TOKEN, p_fahrt:FAHRT });
+  btn.disabled=false; btn.textContent="OK, Änderung bestätigen";
+  if(error || !data || !data.ok){ $("upErrTxt").textContent="Konnte nicht gespeichert werden – bitte nochmal."; $("upErr").classList.remove("hide"); return; }
+  btn.style.display="none"; $("upDone").classList.remove("hide");
+}
+
 async function load(){
   if(params.get("willkommen")){ return loadWelcome(); }
+  if(params.get("update")){ return loadUpdate(); }
   if(!TOKEN || !FAHRT){ show("screen-info"); return; }
   const { data, error } = await sb.rpc("anmeldung_info", { p_token: TOKEN, p_fahrt: FAHRT });
   if(error){ $("infoText").textContent = "Der Termin konnte nicht geladen werden. Bitte später erneut versuchen."; show("screen-info"); return; }
@@ -545,6 +610,7 @@ $("submitBtn").addEventListener("click", submit);
 $("declineBtn").addEventListener("click", decline);
 $("unsubBtn").addEventListener("click", unsubscribe);
 $("optSaveBtn").addEventListener("click", optSave);
+$("upBtn").addEventListener("click", confirmUpdate);
 load();
 </script>
 </body>
