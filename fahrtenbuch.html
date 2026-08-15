@@ -190,14 +190,14 @@
     <div class="tablewrap">
       <table id="tbl">
         <thead><tr>
-          <th class="num">Nr&nbsp;Pilot</th><th class="num">Nr&nbsp;ges.</th><th>Datum</th><th>Kennung</th><th>Rolle</th>
+          <th class="num">Nr&nbsp;ges.</th><th class="num">Nr&nbsp;Pilot</th><th>Datum</th><th>Kennung</th><th>Rolle</th>
           <th>Startort</th><th>Start&nbsp;UTC</th><th>Landeort</th><th>Lande&nbsp;UTC</th>
           <th class="num">Ldg</th><th class="num">Zeit&nbsp;Pilot</th><th class="num">Zeit&nbsp;Mitf.</th>
           <th class="num">Gas&nbsp;l</th><th class="num">l/h</th><th>Bemerkung</th>
-          <th class="num sumcol">&Sigma;&nbsp;Ldg&nbsp;(Pilot)</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Pilot</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Mitf.</th>
+          <th class="num sumcol">&Sigma;&nbsp;Ldg&nbsp;(Pilot)</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Pilot</th>
           <th></th>
         </tr></thead>
-        <tbody id="tbody"><tr><td colspan="19" class="empty">L&auml;dt&hellip;</td></tr></tbody>
+        <tbody id="tbody"><tr><td colspan="18" class="empty">L&auml;dt&hellip;</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -249,7 +249,7 @@ $("logoutBtn").addEventListener("click", async ()=>{ await sb.auth.signOut(); sh
 // ---- Laden ----
 async function loadAll(){
   const { data, error } = await sb.from("fahrtenbuch").select("*");
-  if(error){ $("tbody").innerHTML='<tr><td colspan="19" class="empty">Fehler: '+esc(error.message)+'</td></tr>'; return; }
+  if(error){ $("tbody").innerHTML='<tr><td colspan="18" class="empty">Fehler: '+esc(error.message)+'</td></tr>'; return; }
   rows = data||[];
   rows.sort((a,b)=>{
     if(a.datum!==b.datum) return a.datum<b.datum?-1:1;
@@ -304,14 +304,14 @@ function render(){
   const list=all.filter(x=>!filt || x.r.pilot===filt);
   $("rowCount").textContent=list.length;
   const tb=$("tbody");
-  if(!list.length){ tb.innerHTML='<tr><td colspan="19" class="empty">Noch keine Eintr&auml;ge.</td></tr>'; return; }
+  if(!list.length){ tb.innerHTML='<tr><td colspan="18" class="empty">Noch keine Eintr&auml;ge.</td></tr>'; return; }
   tb.innerHTML = list.map(x=>{
     const r=x.r;
     const unvoll = !r.startzeit || !r.landezeit;
     const lh = (r.gas_liter && x.d) ? (r.gas_liter/(x.d/60)).toFixed(1) : "";
     return '<tr>'+
-      '<td class="num">'+(x.nrPilot!==null?x.nrPilot:"&ndash;")+'</td>'+
       '<td class="num">'+x.nrGes+'</td>'+
+      '<td class="num">'+(x.nrPilot!==null?x.nrPilot:"&ndash;")+'</td>'+
       '<td>'+fmtD(r.datum)+(unvoll?' <span class="badge draft">unvollst&auml;ndig</span>':'')+'</td>'+
       '<td>'+esc(r.kennung)+'</td>'+
       '<td>'+(x.istPilot?'Pilot':'<span class="badge mit">Mitfahrer</span>')+'</td>'+
@@ -327,7 +327,6 @@ function render(){
       '<td>'+esc(r.bemerkung)+'</td>'+
       '<td class="num sumcol">'+x.sumLd+'</td>'+
       '<td class="num sumcol">'+hm(x.sumMp)+'</td>'+
-      '<td class="num sumcol">'+hm(x.sumMm)+'</td>'+
       '<td style="white-space:nowrap">'+
         '<button class="iconbtn" data-edit="'+r.id+'">Bearb.</button> '+
         '<button class="iconbtn del" data-del="'+r.id+'">L&ouml;schen</button></td>'+
@@ -443,17 +442,17 @@ async function delRow(r){
 $("csvBtn").addEventListener("click",()=>{
   const filt=$("fltPilot").value;
   const list=computed().filter(x=>!filt||x.r.pilot===filt);
-  const head=["Nr Pilot","Nr gesamt","Pilot","Datum","Kennung","Rolle","Startort","Start UTC","Landeort","Lande UTC","Landungen","Zeit Pilot","Zeit Mitfahrer","Gas l","l/h","Bemerkung","Summe Landungen (Pilot)","Summe Zeit Pilot","Summe Zeit Mitfahrer"];
+  const head=["Nr gesamt","Nr Pilot","Pilot","Datum","Kennung","Rolle","Startort","Start UTC","Landeort","Lande UTC","Landungen","Zeit Pilot","Zeit Mitfahrer","Gas l","l/h","Bemerkung","Summe Landungen (Pilot)","Summe Zeit Pilot"];
   const lines=[head.join(";")];
   list.forEach(x=>{
     const r=x.r;
     const lh=(r.gas_liter && x.d)?(r.gas_liter/(x.d/60)).toFixed(1):"";
     lines.push([
-      x.nrPilot!==null?x.nrPilot:"", x.nrGes, r.pilot||"", fmtD(r.datum), r.kennung||"",
+      x.nrGes, x.nrPilot!==null?x.nrPilot:"", r.pilot||"", fmtD(r.datum), r.kennung||"",
       x.istPilot?"Pilot":"Mitfahrer", r.startort||"", t5(r.startzeit), r.landeort||"", t5(r.landezeit),
       r.landungen==null?"":r.landungen, x.istPilot?hm(x.d):"", !x.istPilot?hm(x.d):"",
       r.gas_liter==null?"":r.gas_liter, lh, (r.bemerkung||"").replace(/[;\n\r]/g," "),
-      x.sumLd, hm(x.sumMp), hm(x.sumMm)
+      x.sumLd, hm(x.sumMp)
     ].join(";"));
   });
   const blob=new Blob(["﻿"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
