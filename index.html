@@ -307,6 +307,24 @@
     <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
   </div>
 
+  <!-- Absage zur Fahrt -->
+  <div id="screen-absage" class="screen">
+    <div class="hero">
+      <div class="kicker">Ballonteam · Absage</div>
+      <h1>Fahrt leider abgesagt</h1>
+      <div class="sub">Hallo <b id="abName">…</b> – deine gebuchte Ballonfahrt muss leider ausfallen.</div>
+    </div>
+    <div class="card">
+      <p class="okhint" id="abText" style="margin-bottom:16px"><b>Grund:</b> –</p>
+      <div class="rcap"><div><span>Termin</span><b id="abTermin">–</b></div><div><span>Treffpunkt</span><b id="abOrt">–</b></div></div>
+      <p style="color:var(--ink-soft);font-size:.9rem;margin-top:14px">Wir melden uns für einen neuen Termin. Bitte bestätige kurz, dass du die Absage gesehen hast.</p>
+      <div id="abErr" class="status bad hide"><span class="ico">!</span><span id="abErrTxt"></span></div>
+      <button class="cta" id="abBtn">OK, zur Kenntnis genommen</button>
+      <div id="abDone" class="status hide" style="background:var(--pos-soft);border:1px solid #c4dcc1;color:var(--pos)"><span class="ico" style="background:var(--pos)">&#10003;</span><span>Danke, Absage bestätigt.</span></div>
+    </div>
+    <footer><b>STEFFEN HOLZBAU · BALLONTEAM</b> · „Steffballon“</footer>
+  </div>
+
   <!-- Generell abgemeldet -->
   <div id="screen-unsub" class="screen">
     <div class="card"><div class="result bye">
@@ -334,7 +352,7 @@ const FAHRT = params.get("f");
 let info = null, pick = 1;
 
 function show(id){
-  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub","screen-welcome","screen-optok","screen-update"].forEach(s=>{
+  ["screen-load","screen-info","screen-form","screen-ok","screen-no","screen-bye","screen-unsub","screen-welcome","screen-optok","screen-update","screen-absage"].forEach(s=>{
     $(s).classList.toggle("show", s===id);
   });
   window.scrollTo(0,0);
@@ -419,9 +437,38 @@ async function confirmUpdate(){
   btn.style.display="none"; $("upDone").classList.remove("hide");
 }
 
+async function loadAbsage(){
+  if(!TOKEN || !FAHRT){ show("screen-info"); return; }
+  const { data, error } = await sb.rpc("anmeldung_info", { p_token: TOKEN, p_fahrt: FAHRT });
+  if(error || !data || !data.ok){
+    $("infoText").textContent = "Dieser Link ist ungültig oder abgelaufen.";
+    show("screen-info"); return;
+  }
+  info = data;
+  const f = info.fahrt;
+  $("abName").textContent = info.vorname || "";
+  $("abText").innerHTML = "<b>Grund:</b> " + ((info.absage_text||"").trim() || "Die Fahrt muss leider ausfallen.");
+  $("abTermin").textContent = fmtDateShort(f.datum) + ", " + (f.uhrzeit? f.uhrzeit.slice(0,5):"");
+  $("abOrt").textContent = f.treffpunkt || "–";
+  if(info.absage_bestaetigt){
+    $("abBtn").style.display="none"; $("abDone").classList.remove("hide");
+  } else {
+    $("abBtn").style.display=""; $("abDone").classList.add("hide");
+  }
+  show("screen-absage");
+}
+async function confirmAbsage(){
+  const btn=$("abBtn"); $("abErr").classList.add("hide"); btn.disabled=true; btn.textContent="Wird bestätigt…";
+  const { data, error } = await sb.rpc("absage_bestaetigen", { p_token:TOKEN, p_fahrt:FAHRT });
+  btn.disabled=false; btn.textContent="OK, zur Kenntnis genommen";
+  if(error || !data || !data.ok){ $("abErrTxt").textContent="Konnte nicht gespeichert werden – bitte nochmal."; $("abErr").classList.remove("hide"); return; }
+  btn.style.display="none"; $("abDone").classList.remove("hide");
+}
+
 async function load(){
   if(params.get("willkommen")){ return loadWelcome(); }
   if(params.get("update")){ return loadUpdate(); }
+  if(params.get("absage")){ return loadAbsage(); }
   if(!TOKEN || !FAHRT){ show("screen-info"); return; }
   const { data, error } = await sb.rpc("anmeldung_info", { p_token: TOKEN, p_fahrt: FAHRT });
   if(error){ $("infoText").textContent = "Der Termin konnte nicht geladen werden. Bitte später erneut versuchen."; show("screen-info"); return; }
@@ -611,6 +658,7 @@ $("declineBtn").addEventListener("click", decline);
 $("unsubBtn").addEventListener("click", unsubscribe);
 $("optSaveBtn").addEventListener("click", optSave);
 $("upBtn").addEventListener("click", confirmUpdate);
+$("abBtn").addEventListener("click", confirmAbsage);
 load();
 </script>
 </body>

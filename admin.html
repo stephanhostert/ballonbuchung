@@ -440,7 +440,7 @@ async function loadLive(){
   const { data:fresh } = await sb.from("fahrten").select("*").eq("id",fahrt.id).single();
   if(fresh) fahrt=fresh;
   const { data:regs } = await sb.from("anmeldungen")
-    .select("id,personen,gewicht_kg,created_at,update_bestaetigt_at,contacts(vorname,name,handy)")
+    .select("id,personen,gewicht_kg,created_at,update_bestaetigt_at,absage_bestaetigt_at,contacts(vorname,name,handy)")
     .eq("fahrt_id",fahrt.id).eq("status","bestaetigt").order("created_at",{ascending:true});
   const list=regs||[];
   liveRegs=list;
@@ -462,12 +462,16 @@ async function loadLive(){
   if(!list.length){ box.innerHTML='<div class="empty">Noch keine Anmeldungen.</div>'; }
   else { box.innerHTML=""; list.forEach((r,i)=>{
     const c=r.contacts||{}; const row=document.createElement("div"); row.className="rr";
+    const okB='font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:var(--pos);background:var(--pos-soft);border:1px solid #c4dcc1';
+    const offB='font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6';
     let ub="";
-    if(hatUpdate){
+    if(fahrt.status==="abgesagt"){
+      ub = r.absage_bestaetigt_at
+        ? '<span style="'+okB+'">Absage bestätigt</span>'
+        : '<span style="'+offB+'">Absage offen</span>';
+    } else if(hatUpdate){
       const best = r.update_bestaetigt_at && new Date(r.update_bestaetigt_at).getTime() >= updTs;
-      ub = best
-        ? '<span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:var(--pos);background:var(--pos-soft);border:1px solid #c4dcc1">Update bestätigt</span>'
-        : '<span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:20px;color:#8a5a00;background:#f7ecd5;border:1px solid #e8d3a6">Update offen</span>';
+      ub = best ? '<span style="'+okB+'">Update bestätigt</span>' : '<span style="'+offB+'">Update offen</span>';
     }
     row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span>${ub}<span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`+
       `<button class="rr-del" data-del="${r.id}" title="Anmeldung löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>`;
