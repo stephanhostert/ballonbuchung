@@ -194,7 +194,7 @@
           <th>Startort</th><th>Start&nbsp;UTC</th><th>Landeort</th><th>Lande&nbsp;UTC</th>
           <th class="num">Ldg</th><th class="num">Zeit&nbsp;Pilot</th><th class="num">Zeit&nbsp;Mitf.</th>
           <th class="num">Gas&nbsp;l</th><th class="num">l/h</th><th>Bemerkung</th>
-          <th class="num sumcol">&Sigma;&nbsp;Ldg</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Pilot</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Mitf.</th>
+          <th class="num sumcol">&Sigma;&nbsp;Ldg&nbsp;(Pilot)</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Pilot</th><th class="num sumcol">&Sigma;&nbsp;Zeit&nbsp;Mitf.</th>
           <th></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="19" class="empty">L&auml;dt&hellip;</td></tr></tbody>
@@ -289,8 +289,7 @@ function computed(){
     const d=dauerMin(r);
     const istPilot = r.rolle!=="mitfahrer";
     run[p].fg += 1;
-    if(istPilot) run[p].fp += 1;
-    run[p].ld += (r.landungen||0);
+    if(istPilot){ run[p].fp += 1; run[p].ld += (r.landungen||0); }   // Summe Landungen: nur Pilotfahrten
     if(d!==null){ if(istPilot) run[p].mp += d; else run[p].mm += d; }
     return { r, d, istPilot,
       nrPilot: istPilot? run[p].fp : null,
@@ -444,7 +443,7 @@ async function delRow(r){
 $("csvBtn").addEventListener("click",()=>{
   const filt=$("fltPilot").value;
   const list=computed().filter(x=>!filt||x.r.pilot===filt);
-  const head=["Nr Pilot","Nr gesamt","Pilot","Datum","Kennung","Rolle","Startort","Start UTC","Landeort","Lande UTC","Landungen","Zeit Pilot","Zeit Mitfahrer","Gas l","l/h","Bemerkung","Summe Landungen","Summe Zeit Pilot","Summe Zeit Mitfahrer"];
+  const head=["Nr Pilot","Nr gesamt","Pilot","Datum","Kennung","Rolle","Startort","Start UTC","Landeort","Lande UTC","Landungen","Zeit Pilot","Zeit Mitfahrer","Gas l","l/h","Bemerkung","Summe Landungen (Pilot)","Summe Zeit Pilot","Summe Zeit Mitfahrer"];
   const lines=[head.join(";")];
   list.forEach(x=>{
     const r=x.r;
