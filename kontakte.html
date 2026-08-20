@@ -209,6 +209,8 @@
       <button class="fchip" id="fltNoOpt" title="Nur Kontakte ohne erteiltes Opt-in zeigen">nur ohne Opt-in</button>
       <button class="fchip" id="fltInactive" title="Nur inaktive Kontakte zeigen">nur inaktive</button>
       <span class="spacer"></span>
+      <input type="text" id="bulkFlag" list="flagList" placeholder="Kategorie…" style="font-size:.82rem;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);width:140px">
+      <button class="cta small ghost" id="bulkFlagBtn" disabled>Kategorie setzen</button>
       <button class="cta small" id="welcomeBtn" disabled>Begrüßungs-SMS senden</button>
     </div>
     <div id="sendMsg" class="msg hide"></div>
@@ -367,8 +369,32 @@ function updateSendUI(){
   const n=selected.size, btn=$("welcomeBtn");
   btn.disabled = n===0;
   btn.textContent = n ? ("Begrüßungs-SMS senden ("+n+")") : "Begrüßungs-SMS senden";
+  const bf=$("bulkFlagBtn");
+  bf.disabled = n===0;
+  bf.textContent = n ? ("Kategorie setzen ("+n+")") : "Kategorie setzen";
   $("selAll").checked = lastVisible.length>0 && lastVisible.every(id=>selected.has(id));
 }
+$("bulkFlagBtn").addEventListener("click", async ()=>{
+  const ids=[...selected];
+  if(!ids.length) return;
+  const flag=$("bulkFlag").value.trim();
+  if(!flag){ showSend("Bitte oben eine Kategorie eingeben.","bad"); return; }
+  if(!confirm("Kategorie \""+flag+"\" bei "+ids.length+" Kontakt(en) setzen?")) return;
+  const bf=$("bulkFlagBtn"); bf.disabled=true; bf.textContent="Setze…";
+  let n=0;
+  for(const id of ids){
+    const c=contacts.find(x=>x.id===id); if(!c) continue;
+    const cur=Array.isArray(c.flags)?c.flags:[];
+    if(cur.includes(flag)) { n++; continue; }
+    const nf=[...cur, flag];
+    const { error } = await sb.from("contacts").update({ flags:nf }).eq("id",id);
+    if(!error) n++;
+  }
+  showSend("Kategorie \""+flag+"\" bei "+n+" Kontakt(en) gesetzt.","ok");
+  $("bulkFlag").value="";
+  selected.clear();
+  await loadContacts();
+});
 function showSend(t,cls){ const m=$("sendMsg"); m.textContent=t; m.className="msg "+cls; }
 $("selAll").addEventListener("change",()=>{
   if($("selAll").checked) lastVisible.forEach(id=>selected.add(id));
