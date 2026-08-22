@@ -87,6 +87,7 @@
   .filterbar .lbl{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-right:2px;}
   .fchip{font-size:.74rem;font-weight:600;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;cursor:pointer;}
   .fchip.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .fchip.ex{background:var(--neg);color:#fff;border-color:var(--neg);text-decoration:line-through;}
   .cflags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
   .flag-tag{display:inline-flex;font-size:.62rem;font-weight:700;color:var(--brand-dark);background:var(--brand-soft);border:1px solid #b9def0;border-radius:20px;padding:1px 8px;letter-spacing:.02em;}
   .msg{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:7px;margin-top:16px;font-weight:600;font-size:.88rem;}
@@ -109,6 +110,9 @@
   .rr-del{width:30px;height:30px;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);cursor:pointer;display:grid;place-items:center;}
   .rr-del:hover{border-color:#e7c2bb;color:var(--neg);background:#fff;}
   .rr-del svg{width:15px;height:15px;}
+  .rr-act{width:30px;height:30px;flex:none;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);cursor:pointer;display:grid;place-items:center;}
+  .rr-act:hover{border-color:var(--brand);color:var(--brand-dark);background:#fff;}
+  .rr-act svg{width:15px;height:15px;}
   .empty{padding:16px;text-align:center;color:var(--ink-faint);font-size:.85rem;}
   .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px;}
   .pill{font-family:var(--mono);font-size:.72rem;padding:3px 10px;border-radius:20px;background:var(--brand-soft);color:var(--brand-dark);font-weight:600;}
@@ -216,7 +220,6 @@
       <button class="cta ghost" id="refreshBtn">Aktualisieren</button>
       <button class="cta ghost" id="closeBtn">Anmeldefenster schließen</button>
       <button class="cta ghost" id="updateBtn" style="color:var(--brand-dark);border-color:#b9def0">Update versenden</button>
-      <button class="cta ghost" id="vcfBtn">Kontakte (VCF)</button>
       <button class="cta ghost" id="doneBtn" style="color:var(--pos);border-color:#c4dcc1">Fahrt durchgeführt</button>
       <button class="cta ghost" id="cancelFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt absagen</button>
       <button class="cta ghost" id="delFahrtBtn" style="color:var(--neg);border-color:#e7c2bb">Fahrt löschen</button>
@@ -239,7 +242,8 @@ let editFahrtId = null;   // gesetzt = bestehende Fahrt wird bearbeitet
 let contacts = [];        // Vorschlagsliste
 let chosen = {};          // id -> bool
 let pollTimer = null;
-let rcptFlags = [];       // aktive Flag-Filter in der Empfängerauswahl
+let rcptFlags = [];       // Kategorien, die vorhanden sein müssen (einfiltern)
+let rcptExclude = [];     // Kategorien, die NICHT vorhanden sein dürfen (ausfiltern)
 let ortMaps = {};         // Treffpunkt-Name -> zuletzt genutzter Maps-Link
 const DIRS = ["N","NO","O","SO","S","SW","W","NW"];
 
@@ -352,7 +356,7 @@ function activateFahrt(f){
   $("createBtn").textContent="Änderungen speichern";
   $("rcptCard").classList.remove("hidden");
   $("liveCard").classList.remove("hidden");
-  chosen={}; rcptFlags=[];
+  chosen={}; rcptFlags=[]; rcptExclude=[];
   loadRecipients();
   loadLive();
   startPoll();
@@ -376,18 +380,26 @@ function allRcptFlags(){
   return [...set].sort((a,b)=>a.localeCompare(b,"de"));
 }
 function visibleRcpt(){
-  return contacts.filter(c=>rcptFlags.every(f=>(c.flags||[]).includes(f)));
+  return contacts.filter(c=>{
+    const cf=c.flags||[];
+    return rcptFlags.every(f=>cf.includes(f)) && !rcptExclude.some(f=>cf.includes(f));
+  });
 }
 function renderRcptFlagbar(){
   const bar=$("rcptFlags"); const flags=allRcptFlags();
   if(!flags.length){ bar.innerHTML=""; return; }
   bar.innerHTML='<span class="lbl">Kategorien:</span>';
   flags.forEach(f=>{
+    const inc=rcptFlags.includes(f), exc=rcptExclude.includes(f);
     const b=document.createElement("button");
-    b.className="fchip"+(rcptFlags.includes(f)?" on":"");
-    b.textContent=f;
+    b.className="fchip"+(inc?" on":"")+(exc?" ex":"");
+    b.title = inc?"wird gezeigt – klick: ausfiltern" : exc?"wird ausgeblendet – klick: Filter aus" : "klick: nur diese zeigen";
+    b.textContent=(exc?"− ":"")+f;
     b.addEventListener("click",()=>{
-      if(rcptFlags.includes(f)) rcptFlags=rcptFlags.filter(x=>x!==f); else rcptFlags.push(f);
+      // dreistufig: aus -> einfiltern -> ausfiltern -> aus
+      if(inc){ rcptFlags=rcptFlags.filter(x=>x!==f); rcptExclude.push(f); }
+      else if(exc){ rcptExclude=rcptExclude.filter(x=>x!==f); }
+      else { rcptFlags.push(f); }
       renderRecipients();
     });
     bar.appendChild(b);
@@ -474,11 +486,44 @@ async function loadLive(){
       ub = best ? '<span style="'+okB+'">Update bestätigt</span>' : '<span style="'+offB+'">Update offen</span>';
     }
     row.innerHTML=`<span class="n">${i+1}</span><span class="who">${(c.name||"")}, ${(c.vorname||"")}</span>${ub}<span class="det">${r.personen} Pers · ${r.gewicht_kg} kg</span>`+
+      `<button class="rr-act" data-vcfr="${r.id}" title="Als Kontakt speichern (VCF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M12 15l-4-4M12 15l4-4M5 21h14"/></svg></button>`+
+      `<button class="rr-act" data-editr="${r.id}" title="Personen/Gewicht ändern"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M13.5 6.5l3 3"/></svg></button>`+
       `<button class="rr-del" data-del="${r.id}" title="Anmeldung löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>`;
     box.appendChild(row);
   });
   box.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delReg(b.dataset.del)));
+  box.querySelectorAll("[data-vcfr]").forEach(b=>b.addEventListener("click",()=>vcfReg(b.dataset.vcfr)));
+  box.querySelectorAll("[data-editr]").forEach(b=>b.addEventListener("click",()=>editReg(b.dataset.editr)));
   }
+}
+function vcfReg(id){
+  const r=liveRegs.find(x=>x.id===id); if(!r) return;
+  const c=r.contacts||{};
+  const esc=(s)=>String(s||"").replace(/[\r\n,;\\]/g," ").trim();
+  const vn=esc(c.vorname), nn=esc(c.name), tel=(c.handy||"").trim();
+  const fn=((vn+" "+nn).trim())||nn||vn||"Gast";
+  const dstr = fahrt.datum ? fahrt.datum.split("-").reverse().join(".") : "";
+  const lines=["BEGIN:VCARD","VERSION:3.0","N:"+nn+";"+vn+";;;","FN:"+fn];
+  if(tel) lines.push("TEL;TYPE=CELL:"+tel);
+  lines.push("NOTE:Ballonfahrt "+dstr, "END:VCARD");
+  const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/vcard;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=((vn+"_"+nn).replace(/[^A-Za-z0-9_]+/g,"_")||"gast")+".vcf"; a.click();
+}
+async function editReg(id){
+  const r=liveRegs.find(x=>x.id===id); if(!r) return;
+  const c=r.contacts||{};
+  const pStr=prompt("Personenzahl für "+(c.vorname||"")+" "+(c.name||"")+":", r.personen);
+  if(pStr===null) return;
+  const p=parseInt(pStr,10);
+  if(!(p>=1)){ alert("Bitte eine gültige Personenzahl (mind. 1)."); return; }
+  const gStr=prompt("Gesamtgewicht in kg (alle "+p+" Personen):", r.gewicht_kg);
+  if(gStr===null) return;
+  const g=parseFloat(String(gStr).replace(",","."));
+  if(!(g>0)){ alert("Bitte ein gültiges Gewicht."); return; }
+  const { error } = await sb.from("anmeldungen").update({ personen:p, gewicht_kg:g }).eq("id",id);
+  if(error){ alert("Änderung fehlgeschlagen: "+error.message); return; }
+  loadLive();
 }
 async function delReg(id){
   if(!confirm("Diese Anmeldung wirklich löschen? Der Platz wird wieder frei.")) return;
@@ -508,25 +553,6 @@ $("updateBtn").addEventListener("click", async ()=>{
   const ok=(data&&data.results)?data.results.filter(r=>r.ok).length:0;
   alert("Update gesendet. "+ok+"/"+total+" Gast/Gäste per SMS informiert.\nDie Quittungen erscheinen hier bei den Gästen.");
   loadLive();
-});
-$("vcfBtn").addEventListener("click", ()=>{
-  if(!liveRegs.length){ alert("Keine eingebuchten Gäste zum Exportieren."); return; }
-  const esc=(s)=>String(s||"").replace(/[\r\n,;\\]/g," ").trim();
-  const dstr = fahrt.datum ? fahrt.datum.split("-").reverse().join(".") : "";
-  const cards=liveRegs.map(r=>{
-    const c=r.contacts||{}; const vn=esc(c.vorname), nn=esc(c.name); const tel=(c.handy||"").trim();
-    const fn=((vn+" "+nn).trim())||nn||vn||"Ballonfahrt Gast";
-    return ["BEGIN:VCARD","VERSION:3.0",
-      "N:"+nn+";"+vn+";;;","FN:"+fn,
-      tel?("TEL;TYPE=CELL:"+tel):null,
-      "NOTE:Ballonfahrt "+dstr,
-      "END:VCARD"].filter(Boolean).join("\r\n");
-  }).join("\r\n");
-  const blob=new Blob([cards+"\r\n"],{type:"text/vcard;charset=utf-8"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="ballonfahrt-"+(fahrt.datum||"gaeste")+".vcf";
-  a.click();
 });
 $("closeBtn").addEventListener("click", async ()=>{
   if(!fahrt) return;
