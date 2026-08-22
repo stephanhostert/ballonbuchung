@@ -669,8 +669,10 @@ async function autoWind(){
   if(!ortRaw || !datum){ $("wxPanel").style.display="none"; return; }
   $("windInfo").textContent="Wetter wird geholt…";
   try{
-    const g=await geocode(ortClean(ortRaw));
-    if(!g){ $("windInfo").textContent="Ort nicht gefunden – Wetter/Wind bitte manuell."; $("wxPanel").style.display="none"; return; }
+    let g=await geocode(ortClean(ortRaw));
+    let fallback=false;
+    if(!g){ g=await geocode("Hofweiler"); fallback=true; }   // Ort nicht gefunden -> ersatzweise Hofweiler
+    if(!g){ $("windInfo").textContent="Wetter/Wind konnte nicht geladen werden – bitte manuell."; $("wxPanel").style.display="none"; return; }
     let hh=parseInt(zeit.slice(0,2),10)||6;
     if((parseInt(zeit.slice(3,5),10)||0)>=30) hh=(hh+1)%24;
     const u="https://api.open-meteo.com/v1/forecast?latitude="+g.latitude+"&longitude="+g.longitude+
@@ -709,12 +711,14 @@ async function autoWind(){
     const thermStart = sr? addHours(sr, 2) : "–";
     const thermEnd   = ss? addHours(ss, -2) : "–";
 
-    $("windInfo").textContent="Wind aus "+dir+" gesetzt ("+Math.round(deg)+"°) – anpassbar.";
+    $("windInfo").textContent = fallback
+      ? "Ort nicht gefunden – Wetter ersatzweise für Hofweiler. Wind aus "+dir+" gesetzt – anpassbar."
+      : "Wind aus "+dir+" gesetzt ("+Math.round(deg)+"°) – anpassbar.";
     const col=(t,c)=>'<span style="color:'+c+'">'+t+'</span>';
     const boeCol = gust>=13?"#bf3a2b":(gust>=8?"#9a6b00":"var(--ink)");
     const visTxt = visKm>=99?"&gt;99":visKm.toFixed(visKm<10?1:0);
     $("wxPanel").innerHTML =
-      '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter · '+g.name+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
+      '<div style="font-weight:700;color:var(--ink);margin-bottom:8px">Wetter · '+(fallback?"Hofweiler (Ersatz)":g.name)+' · '+datum.split("-").reverse().join(".")+' '+String(hh).padStart(2,"0")+':00 Uhr</div>'+
       wxRow("Wind", "aus "+dir+" ("+Math.round(deg)+"°)")+
       wxRow("Bodenwind / Böen", spd+" / "+col(gust, boeCol)+" kt")+
       wxRow("Thermik (geschätzt)", thermStart+"–"+thermEnd)+
