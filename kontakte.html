@@ -81,6 +81,7 @@
   .filterbar .lbl{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-right:2px;}
   .fchip{font-size:.74rem;font-weight:600;color:var(--ink-soft);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;cursor:pointer;}
   .fchip.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .fchip.ex{background:var(--neg);color:#fff;border-color:var(--neg);text-decoration:line-through;}
   .sendbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:8px;}
   .sendbar .selall{display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600;color:var(--ink-soft);cursor:pointer;}
   .sendbar .selall input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
@@ -246,7 +247,8 @@ const $ = (id)=>document.getElementById(id);
 
 let contacts = [];
 let curFlags = [];          // Flags im offenen Formular
-let filterFlags = [];       // aktive Filter-Flags in der Liste
+let filterFlags = [];       // Kategorien, die vorhanden sein MÜSSEN (einfiltern)
+let excludeFlags = [];      // Kategorien, die NICHT vorhanden sein dürfen (ausfiltern)
 let absagen = {};           // contact_id -> Anzahl Absagen
 let einladungen = {};       // contact_id -> Anzahl Einladungen
 let selected = new Set();    // ausgewählte Kontakte für Begrüßungs-SMS
@@ -305,12 +307,16 @@ function renderFilterbar(){
   if(!flags.length){ bar.innerHTML=""; return; }
   bar.innerHTML='<span class="lbl">Filter:</span>';
   flags.forEach(f=>{
+    const inc=filterFlags.includes(f), exc=excludeFlags.includes(f);
     const b=document.createElement("button");
-    b.className="fchip"+(filterFlags.includes(f)?" on":"");
-    b.textContent=f;
+    b.className="fchip"+(inc?" on":"")+(exc?" ex":"");
+    b.title = inc?"wird gezeigt – klick: ausfiltern" : exc?"wird ausgeblendet – klick: Filter aus" : "klick: nur diese zeigen";
+    b.textContent=(exc?"− ":"")+f;
     b.addEventListener("click",()=>{
-      if(filterFlags.includes(f)) filterFlags=filterFlags.filter(x=>x!==f);
-      else filterFlags.push(f);
+      // dreistufig: aus -> einfiltern -> ausfiltern -> aus
+      if(inc){ filterFlags=filterFlags.filter(x=>x!==f); excludeFlags.push(f); }
+      else if(exc){ excludeFlags=excludeFlags.filter(x=>x!==f); }
+      else { filterFlags.push(f); }
       renderFilterbar(); renderList();
     });
     bar.appendChild(b);
@@ -321,7 +327,8 @@ function renderList(){
   const box = $("clist"); box.innerHTML="";
   const list = contacts.filter(c=>{
     const textOk = !q || [c.name,c.vorname,c.handy,c.ort,c.gutschein_nr,c.firma].filter(Boolean).join(" ").toLowerCase().includes(q);
-    const flagsOk = filterFlags.every(f=>(c.flags||[]).includes(f));   // muss ALLE aktiven Filter-Flags haben
+    const cf=c.flags||[];
+    const flagsOk = filterFlags.every(f=>cf.includes(f)) && !excludeFlags.some(f=>cf.includes(f));
     const optOk = !onlyNoOpt || !c.consent;                            // Filter „nur ohne Opt-in“
     const aktivOk = !onlyInactive || !c.aktiv;                          // Filter „nur inaktive“
     return textOk && flagsOk && optOk && aktivOk;
@@ -352,6 +359,7 @@ function renderList(){
         flagsHtml+
       '</div>'+
       '<div class="crow-actions">'+
+        '<button class="iconbtn" data-vcf="'+c.id+'" title="Als Kontakt speichern (VCF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M12 15l-4-4M12 15l4-4M5 21h14"/></svg></button>'+
         '<button class="iconbtn" data-edit="'+c.id+'" title="Bearbeiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M13.5 6.5l3 3"/></svg></button>'+
         '<button class="iconbtn del" data-del="'+c.id+'" title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>'+
       '</div>';
@@ -359,6 +367,7 @@ function renderList(){
   });
   box.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openForm(contacts.find(x=>x.id===b.dataset.edit))));
   box.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delContact(contacts.find(x=>x.id===b.dataset.del))));
+  box.querySelectorAll("[data-vcf]").forEach(b=>b.addEventListener("click",()=>downloadVcf(contacts.find(x=>x.id===b.dataset.vcf))));
   box.querySelectorAll("[data-sel]").forEach(cb=>cb.addEventListener("change",()=>{
     if(cb.checked) selected.add(cb.dataset.sel); else selected.delete(cb.dataset.sel);
     updateSendUI();
@@ -535,6 +544,26 @@ $("qrPrintBtn").addEventListener("click", ()=>{
     '</body></html>');
   w.document.close(); w.focus(); setTimeout(()=>{ try{w.print();}catch(e){} }, 350);
 });
+
+// ---- Einzel-Kontakt als VCF ----
+function downloadVcf(c){
+  if(!c) return;
+  const esc=(s)=>String(s||"").replace(/[\r\n,;\\]/g," ").trim();
+  const vn=esc(c.vorname), nn=esc(c.name), tel=(c.handy||"").trim();
+  const fn=((vn+" "+nn).trim())||nn||vn||"Kontakt";
+  const lines=["BEGIN:VCARD","VERSION:3.0","N:"+nn+";"+vn+";;;","FN:"+fn];
+  if(tel) lines.push("TEL;TYPE=CELL:"+tel);
+  if(c.firma) lines.push("ORG:"+esc(c.firma));
+  if(c.ort) lines.push("ADR;TYPE=HOME:;;;"+esc(c.ort)+";;;");
+  const note=[c.gutschein_nr?("Gutschein "+c.gutschein_nr):"", (c.flags||[]).length?("Kategorien: "+c.flags.join(", ")):""].filter(Boolean).join(" · ");
+  if(note) lines.push("NOTE:"+esc(note));
+  lines.push("END:VCARD");
+  const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/vcard;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=((vn+"_"+nn).replace(/[^A-Za-z0-9_]+/g,"_")||"kontakt")+".vcf";
+  a.click();
+}
 
 initAuth();
 </script>
